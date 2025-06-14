@@ -10,14 +10,18 @@
 - 방향키(←, →, ↑, ↓)로 이동
 - 게임 오버 시 'R' 키로 재시작
 
-## 실행 방법
-1. 이 저장소를 클론하거나 index.html 파일을 다운로드합니다.
-2. index.html 파일을 더블 클릭하거나 브라우저에서 열면 바로 게임을 플레이할 수 있습니다.
+## 플레이 방법
+> ⚠️ **index.html 파일은 현재 저장소에 없습니다.**
+
+- 게임은 Github Pages에서 바로 플레이할 수 있습니다.
+- 아래 링크를 클릭하면 웹에서 바로 실행됩니다.
+
+[👉 게임 바로가기 (Github Pages)](https://kevin-innovation.github.io/wave-ver2.0/)
 
 ## Github Pages 배포 방법
 1. index.html 파일을 gh-pages 브랜치에 푸시합니다.
 2. Github 저장소의 Settings → Pages에서 'gh-pages' 브랜치를 선택합니다.
-3. 잠시 후 https://kevin-innovation.github.io/wave-ver2.0/ 에서 게임을 플레이할 수 있습니다.
+3. 잠시 후 위의 링크에서 게임을 플레이할 수 있습니다.
 
 ---
 문의사항은 이슈로 남겨주세요. 
