@@ -17,11 +17,3 @@
 - 아래 링크를 클릭하면 웹에서 바로 실행됩니다.
 
 [👉 게임 바로가기 (Github Pages)](https://kevin-innovation.github.io/wave-ver2.0/)
-
-## Github Pages 배포 방법
-1. index.html 파일을 gh-pages 브랜치에 푸시합니다.
-2. Github 저장소의 Settings → Pages에서 'gh-pages' 브랜치를 선택합니다.
-3. 잠시 후 위의 링크에서 게임을 플레이할 수 있습니다.
-
----
-문의사항은 이슈로 남겨주세요. 
