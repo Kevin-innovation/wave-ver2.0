@@ -52,7 +52,7 @@
         
         <div class="instructions">
             <p><strong>조작법:</strong> 방향키 또는 WASD로 이동, HJKL로 스킬 사용, 게임오버 시 'R' 키로 재시작</p>
-            <p><strong>스킬:</strong> H-대시, J-실드, K-슬로우, L-몬스터제거</p>
+            <p><strong>스킬:</strong> H-대시, J-실드, K-슬로우, L-몬스터멈춤</p>
             <p><strong>목표:</strong> 빨간 몬스터를 피하면서 최대한 많은 웨이브 생존하기</p>
         </div>
         
@@ -164,9 +164,11 @@
                 active: false,
                 slowFactor: 0.3    // 30% 속도로 감소
             },
-            clear: {
+            stop: {
                 cooldown: 0,
-                maxCooldown: 4800, // 80초 (60fps * 80)
+                maxCooldown: 3600, // 60초 (60fps * 60)
+                duration: 0,
+                maxDuration: 180,  // 3초간 정지
                 active: false
             }
         };
@@ -359,7 +361,9 @@
             skills.slow.cooldown = 0;
             skills.slow.duration = 0;
             skills.slow.active = false;
-            skills.clear.cooldown = 0;
+            skills.stop.cooldown = 0;
+            skills.stop.duration = 0;
+            skills.stop.active = false;
         }
 
         /**
@@ -413,21 +417,13 @@
             console.log('슬로우 스킬 활성화!'); // 디버깅용
         }
 
-        function useClearSkill() {
-            if (skills.clear.cooldown > 0) return;
+        function useStopSkill() {
+            if (skills.stop.cooldown > 0) return;
             
-            // 모든 활성 몬스터 제거
-            for (let i = 0; i < monsters.length; i++) {
-                if (monsters[i].active) {
-                    monsters[i].active = false;
-                    monsters[i].dx = 0;
-                    monsters[i].dy = 0;
-                    activeMonsters--;
-                    monstersAvoided++;
-                }
-            }
-            
-            skills.clear.cooldown = skills.clear.maxCooldown;
+            skills.stop.active = true;
+            skills.stop.duration = skills.stop.maxDuration;
+            skills.stop.cooldown = skills.stop.maxCooldown;
+            console.log('스톱 스킬 활성화! 몬스터들이 3초간 정지합니다.'); // 디버깅용
         }
 
         /**
@@ -480,7 +476,7 @@
                     keys.k = false;
                 }
                 if (keys.l) {
-                    useClearSkill();
+                    useStopSkill();
                     keys.l = false;
                 }
 
@@ -489,7 +485,7 @@
                 if (skills.dash.cooldown > 0) skills.dash.cooldown--;
                 if (skills.shield.cooldown > 0) skills.shield.cooldown--;
                 if (skills.slow.cooldown > 0) skills.slow.cooldown--;
-                if (skills.clear.cooldown > 0) skills.clear.cooldown--;
+                if (skills.stop.cooldown > 0) skills.stop.cooldown--;
 
                 // 실드 지속시간 감소
                 if (skills.shield.duration > 0) {
@@ -504,6 +500,14 @@
                     skills.slow.duration--;
                     if (skills.slow.duration <= 0) {
                         skills.slow.active = false;
+                    }
+                }
+
+                // 스톱 지속시간 감소
+                if (skills.stop.duration > 0) {
+                    skills.stop.duration--;
+                    if (skills.stop.duration <= 0) {
+                        skills.stop.active = false;
                     }
                 }
 
@@ -531,12 +535,16 @@
                     // 해당 슬롯에 활성화된 몬스터가 있는지 확인
                     if (monsters[i].active) {
                         
-                        // 몬스터 이동 (슬로우 스킬 실시간 적용)
+                        // 몬스터 이동 (스킬 효과 실시간 적용)
                         let moveSpeedX = monsters[i].dx;
                         let moveSpeedY = monsters[i].dy;
                         
-                        // 슬로우 스킬이 활성화되어 있으면 속도 감소
-                        if (skills.slow.active) {
+                        // 스톱 스킬이 활성화되어 있으면 완전 정지
+                        if (skills.stop.active) {
+                            moveSpeedX = 0;
+                            moveSpeedY = 0;
+                        } else if (skills.slow.active) {
+                            // 슬로우 스킬이 활성화되어 있으면 속도 감소
                             moveSpeedX *= skills.slow.slowFactor;
                             moveSpeedY *= skills.slow.slowFactor;
                         }
@@ -600,8 +608,14 @@
                 // ==================== 몬스터 그리기 ====================
                 for (let i = 0; i < monsters.length; i++) {
                     if (monsters[i].active) {
-                        // 슬로우 스킬 활성화 시 몬스터 색상 변경
-                        ctx.fillStyle = skills.slow.active ? '#FF6666' : monsters[i].color;  // 슬로우 시 연한 빨간색
+                        // 스킬 활성화 시 몬스터 색상 변경
+                        if (skills.stop.active) {
+                            ctx.fillStyle = '#888888';  // 스톱 시 회색
+                        } else if (skills.slow.active) {
+                            ctx.fillStyle = '#FF6666';  // 슬로우 시 연한 빨간색
+                        } else {
+                            ctx.fillStyle = monsters[i].color;  // 기본 빨간색
+                        }
                         ctx.fillRect(monsters[i].x, monsters[i].y, monsters[i].width, monsters[i].height);
                     }
                 }
@@ -637,10 +651,11 @@
                 const slowText = skills.slow.active ? 'Active!' : (skills.slow.cooldown > 0 ? slowCooldown + 's' : 'Ready');
                 ctx.fillText(`K-Slow: ${slowText}`, 10, 260);
                 
-                // 클리어 스킬 (L)
-                const clearCooldown = Math.ceil(skills.clear.cooldown / 60);
-                ctx.fillStyle = skills.clear.cooldown > 0 ? '#888888' : '#FF0000';
-                ctx.fillText(`L-Clear: ${skills.clear.cooldown > 0 ? clearCooldown + 's' : 'Ready'}`, 10, 290);
+                // 스톱 스킬 (L) 
+                const stopCooldown = Math.ceil(skills.stop.cooldown / 60);
+                ctx.fillStyle = skills.stop.cooldown > 0 ? '#888888' : '#9900CC';
+                const stopText = skills.stop.active ? 'Active!' : (skills.stop.cooldown > 0 ? stopCooldown + 's' : 'Ready');
+                ctx.fillText(`L-Stop: ${stopText}`, 10, 290);
                 
                 // 색상 리셋
                 ctx.fillStyle = '#000000';
