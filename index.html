@@ -51,7 +51,8 @@
         <canvas id="gameCanvas" width="800" height="800"></canvas>
         
         <div class="instructions">
-            <p><strong>조작법:</strong> 방향키 또는 WASD로 이동, 게임오버 시 'R' 키로 재시작</p>
+            <p><strong>조작법:</strong> 방향키 또는 WASD로 이동, HJKL로 스킬 사용, 게임오버 시 'R' 키로 재시작</p>
+            <p><strong>스킬:</strong> H-대시, J-실드, K-슬로우, L-몬스터제거</p>
             <p><strong>목표:</strong> 빨간 몬스터를 피하면서 최대한 많은 웨이브 생존하기</p>
         </div>
         
@@ -99,7 +100,7 @@
         let currentWave = 1;
         let activeMonsters = 0;
         let monstersAvoided = 0;
-        let monstersPerWave = 1;
+        let monstersPerWave = 5;  // Wave 1부터 5개 시작
         let waveStarted = false;
 
         // ==================== 플레이어 객체 ====================
@@ -133,7 +134,41 @@
             right: false,
             up: false,
             down: false,
-            r: false
+            r: false,
+            h: false,  // 대시 스킬
+            j: false,  // 실드 스킬
+            k: false,  // 슬로우 스킬
+            l: false   // 클리어 스킬
+        };
+
+        // ==================== 스킬 시스템 ====================
+        const skills = {
+            dash: {
+                cooldown: 0,
+                maxCooldown: 180,  // 3초 (60fps 기준)
+                distance: 100,
+                active: false
+            },
+            shield: {
+                cooldown: 0,
+                maxCooldown: 600,  // 10초
+                duration: 0,
+                maxDuration: 180,  // 3초 무적
+                active: false
+            },
+            slow: {
+                cooldown: 0,
+                maxCooldown: 900,  // 15초
+                duration: 0,
+                maxDuration: 300,  // 5초 지속
+                active: false,
+                slowFactor: 0.3    // 30% 속도로 감소
+            },
+            clear: {
+                cooldown: 0,
+                maxCooldown: 4800, // 80초 (60fps * 80)
+                active: false
+            }
         };
 
         // ==================== 이벤트 리스너 설정 ====================
@@ -167,6 +202,22 @@
                     }
                     event.preventDefault();
                     break;
+                case 'KeyH':
+                    keys.h = true;
+                    event.preventDefault();
+                    break;
+                case 'KeyJ':
+                    keys.j = true;
+                    event.preventDefault();
+                    break;
+                case 'KeyK':
+                    keys.k = true;
+                    event.preventDefault();
+                    break;
+                case 'KeyL':
+                    keys.l = true;
+                    event.preventDefault();
+                    break;
             }
         });
 
@@ -188,6 +239,18 @@
                 case 'ArrowDown':
                 case 'KeyS':
                     keys.down = false;
+                    break;
+                case 'KeyH':
+                    keys.h = false;
+                    break;
+                case 'KeyJ':
+                    keys.j = false;
+                    break;
+                case 'KeyK':
+                    keys.k = false;
+                    break;
+                case 'KeyL':
+                    keys.l = false;
                     break;
             }
         });
@@ -231,8 +294,13 @@
             // 피타고라스 정리로 거리 계산 (√(dx² + dy²))
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // 웨이브에 따른 속도 계산: 기본 2.0에서 웨이브당 0.3씩 증가
-            const speed = 2 + (currentWave - 1) * 0.3;
+            // 웨이브에 따른 속도 계산: Wave 5 수준(3.2)부터 시작하여 웨이브당 0.3씩 증가
+            let speed = 3.2 + (currentWave - 1) * 0.3;
+            
+            // 슬로우 스킬 적용
+            if (skills.slow.active) {
+                speed *= skills.slow.slowFactor;
+            }
 
             // 방향 벡터를 단위 벡터로 정규화한 후 속도 적용
             let finalDx = 0, finalDy = 0;
@@ -268,7 +336,7 @@
             currentWave = 1;
             activeMonsters = 0;
             monstersAvoided = 0;
-            monstersPerWave = 1;
+            monstersPerWave = 5;  // Wave 1부터 5개 시작
             gameState = GAME_STATES.PLAYING;
             waveStarted = false;
 
@@ -282,6 +350,84 @@
                 monsters[i].dx = 0;
                 monsters[i].dy = 0;
             }
+
+            // 스킬 쿨다운 초기화
+            skills.dash.cooldown = 0;
+            skills.shield.cooldown = 0;
+            skills.shield.duration = 0;
+            skills.shield.active = false;
+            skills.slow.cooldown = 0;
+            skills.slow.duration = 0;
+            skills.slow.active = false;
+            skills.clear.cooldown = 0;
+        }
+
+        /**
+         * 스킬 사용 함수들
+         */
+        function useDashSkill() {
+            if (skills.dash.cooldown > 0) return;
+            
+            // 현재 이동 방향 계산
+            let dashX = 0, dashY = 0;
+            if (keys.left) dashX = -skills.dash.distance;
+            if (keys.right) dashX = skills.dash.distance;
+            if (keys.up) dashY = -skills.dash.distance;
+            if (keys.down) dashY = skills.dash.distance;
+            
+            // 대각선 이동 시 거리 조정
+            if (dashX !== 0 && dashY !== 0) {
+                dashX *= 0.7;
+                dashY *= 0.7;
+            }
+            
+            // 기본값: 마지막 이동 방향 또는 오른쪽
+            if (dashX === 0 && dashY === 0) {
+                dashX = skills.dash.distance;
+            }
+            
+            // 화면 경계 체크하며 대시
+            const newX = Math.max(0, Math.min(canvas.width - player.width, player.x + dashX));
+            const newY = Math.max(0, Math.min(canvas.height - player.height, player.y + dashY));
+            
+            player.x = newX;
+            player.y = newY;
+            
+            skills.dash.cooldown = skills.dash.maxCooldown;
+        }
+
+        function useShieldSkill() {
+            if (skills.shield.cooldown > 0) return;
+            
+            skills.shield.active = true;
+            skills.shield.duration = skills.shield.maxDuration;
+            skills.shield.cooldown = skills.shield.maxCooldown;
+        }
+
+        function useSlowSkill() {
+            if (skills.slow.cooldown > 0) return;
+            
+            skills.slow.active = true;
+            skills.slow.duration = skills.slow.maxDuration;
+            skills.slow.cooldown = skills.slow.maxCooldown;
+            console.log('슬로우 스킬 활성화!'); // 디버깅용
+        }
+
+        function useClearSkill() {
+            if (skills.clear.cooldown > 0) return;
+            
+            // 모든 활성 몬스터 제거
+            for (let i = 0; i < monsters.length; i++) {
+                if (monsters[i].active) {
+                    monsters[i].active = false;
+                    monsters[i].dx = 0;
+                    monsters[i].dy = 0;
+                    activeMonsters--;
+                    monstersAvoided++;
+                }
+            }
+            
+            skills.clear.cooldown = skills.clear.maxCooldown;
         }
 
         /**
@@ -319,6 +465,48 @@
                     player.y += player.speed;
                 }
 
+                // ==================== 스킬 사용 처리 ====================
+                if (keys.h) {
+                    useDashSkill();
+                    keys.h = false; // 한 번만 실행되도록
+                }
+                if (keys.j) {
+                    useShieldSkill();
+                    keys.j = false;
+                }
+                if (keys.k) {
+                    console.log('K키 눌림 감지!'); // 디버깅용
+                    useSlowSkill();
+                    keys.k = false;
+                }
+                if (keys.l) {
+                    useClearSkill();
+                    keys.l = false;
+                }
+
+                // ==================== 스킬 상태 업데이트 ====================
+                // 쿨다운 감소
+                if (skills.dash.cooldown > 0) skills.dash.cooldown--;
+                if (skills.shield.cooldown > 0) skills.shield.cooldown--;
+                if (skills.slow.cooldown > 0) skills.slow.cooldown--;
+                if (skills.clear.cooldown > 0) skills.clear.cooldown--;
+
+                // 실드 지속시간 감소
+                if (skills.shield.duration > 0) {
+                    skills.shield.duration--;
+                    if (skills.shield.duration <= 0) {
+                        skills.shield.active = false;
+                    }
+                }
+
+                // 슬로우 지속시간 감소
+                if (skills.slow.duration > 0) {
+                    skills.slow.duration--;
+                    if (skills.slow.duration <= 0) {
+                        skills.slow.active = false;
+                    }
+                }
+
                 // ==================== 몬스터 생성 시스템 ====================
                 // 웨이브가 시작되지 않았다면 현재 웨이브의 모든 몬스터를 동시에 생성
                 if (!waveStarted) {
@@ -343,12 +531,21 @@
                     // 해당 슬롯에 활성화된 몬스터가 있는지 확인
                     if (monsters[i].active) {
                         
-                        // 몬스터를 생성 시 계산된 방향으로 이동
-                        monsters[i].x += monsters[i].dx;  // x좌표 이동
-                        monsters[i].y += monsters[i].dy;  // y좌표 이동
+                        // 몬스터 이동 (슬로우 스킬 실시간 적용)
+                        let moveSpeedX = monsters[i].dx;
+                        let moveSpeedY = monsters[i].dy;
+                        
+                        // 슬로우 스킬이 활성화되어 있으면 속도 감소
+                        if (skills.slow.active) {
+                            moveSpeedX *= skills.slow.slowFactor;
+                            moveSpeedY *= skills.slow.slowFactor;
+                        }
+                        
+                        monsters[i].x += moveSpeedX;  // x좌표 이동
+                        monsters[i].y += moveSpeedY;  // y좌표 이동
 
-                        // 플레이어와 몬스터의 충돌 검사
-                        if (checkCollision(player, monsters[i])) {
+                        // 플레이어와 몬스터의 충돌 검사 (실드 활성화 시 무시)
+                        if (checkCollision(player, monsters[i]) && !skills.shield.active) {
                             gameState = GAME_STATES.GAME_OVER;  // 충돌 시 게임 오버
                         }
 
@@ -390,11 +587,21 @@
                 // ==================== 플레이어 그리기 ====================
                 ctx.fillStyle = player.color;  // 파란색
                 ctx.fillRect(player.x, player.y, player.width, player.height);
+                
+                // 실드 효과 표시
+                if (skills.shield.active) {
+                    ctx.strokeStyle = '#00FFFF';  // 청록색 실드
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(player.x + player.width/2, player.y + player.height/2, 35, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
 
                 // ==================== 몬스터 그리기 ====================
                 for (let i = 0; i < monsters.length; i++) {
                     if (monsters[i].active) {
-                        ctx.fillStyle = monsters[i].color;  // 빨간색
+                        // 슬로우 스킬 활성화 시 몬스터 색상 변경
+                        ctx.fillStyle = skills.slow.active ? '#FF6666' : monsters[i].color;  // 슬로우 시 연한 빨간색
                         ctx.fillRect(monsters[i].x, monsters[i].y, monsters[i].width, monsters[i].height);
                     }
                 }
@@ -407,7 +614,36 @@
                 ctx.fillText(`Wave: ${currentWave}`, 10, 30);
                 ctx.fillText(`Active: ${activeMonsters}`, 10, 60);
                 ctx.fillText(`Avoided: ${monstersAvoided}`, 10, 90);
-                ctx.fillText(`Speed: ${(2 + (currentWave - 1) * 0.3).toFixed(1)}`, 10, 120);
+                ctx.fillText(`Speed: ${(3.2 + (currentWave - 1) * 0.3).toFixed(1)}`, 10, 120);
+
+                // ==================== 스킬 UI 표시 ====================
+                ctx.font = '20px Arial';
+                ctx.fillText('Skills:', 10, 170);
+                
+                // 대시 스킬 (H)
+                const dashCooldown = Math.ceil(skills.dash.cooldown / 60);
+                ctx.fillStyle = skills.dash.cooldown > 0 ? '#888888' : '#00AA00';
+                ctx.fillText(`H-Dash: ${skills.dash.cooldown > 0 ? dashCooldown + 's' : 'Ready'}`, 10, 200);
+                
+                // 실드 스킬 (J)
+                const shieldCooldown = Math.ceil(skills.shield.cooldown / 60);
+                ctx.fillStyle = skills.shield.cooldown > 0 ? '#888888' : '#0066FF';
+                const shieldText = skills.shield.active ? 'Active!' : (skills.shield.cooldown > 0 ? shieldCooldown + 's' : 'Ready');
+                ctx.fillText(`J-Shield: ${shieldText}`, 10, 230);
+                
+                // 슬로우 스킬 (K)
+                const slowCooldown = Math.ceil(skills.slow.cooldown / 60);
+                ctx.fillStyle = skills.slow.cooldown > 0 ? '#888888' : '#FF6600';
+                const slowText = skills.slow.active ? 'Active!' : (skills.slow.cooldown > 0 ? slowCooldown + 's' : 'Ready');
+                ctx.fillText(`K-Slow: ${slowText}`, 10, 260);
+                
+                // 클리어 스킬 (L)
+                const clearCooldown = Math.ceil(skills.clear.cooldown / 60);
+                ctx.fillStyle = skills.clear.cooldown > 0 ? '#888888' : '#FF0000';
+                ctx.fillText(`L-Clear: ${skills.clear.cooldown > 0 ? clearCooldown + 's' : 'Ready'}`, 10, 290);
+                
+                // 색상 리셋
+                ctx.fillStyle = '#000000';
 
             } else if (gameState === GAME_STATES.GAME_OVER) {
                 
