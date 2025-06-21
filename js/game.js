@@ -15,6 +15,11 @@ import { monsters, resetMonsters, updateMonsters, spawnWaveMonsters, getActiveMo
 import { skills, resetSkills, updateSkills, handleSkillInputs } from './skills.js';
 import { keys, setupInputListeners } from './input.js';
 import { renderGame } from './render.js';
+import { initEconomy, updateBestScore } from './economy.js';
+import { initUpgradeSystem } from './upgrade.js';
+import { updateSkillConfig } from './skills.js';
+import './ui.js';  // UI 모듈 로드
+import './shop.js';  // 상점 모듈 로드
 
 // ==================== 게임 변수 ====================
 export const gameState = {
@@ -40,8 +45,17 @@ export function initGame() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     
+    // 경제 시스템 초기화 (코인 등)
+    initEconomy();
+    
+    // 업그레이드 시스템 초기화
+    initUpgradeSystem();
+    
+    // 스킬 설정 업데이트 (업그레이드 반영)
+    updateSkillConfig();
+    
     // 키보드 이벤트 리스너 설정
-    setupInputListeners(gameState);
+    setupInputListeners(gameState, canvas);
     
     // 게임 루프 시작
     gameLoop();
@@ -97,6 +111,8 @@ function updateGame() {
 
         // 플레이어와 몬스터 충돌 검사
         if (checkPlayerMonsterCollisions()) {
+            // 게임 오버 시 최고 기록 업데이트
+            updateBestScore(gameData.currentWave);
             gameState.current = GAME_STATES.GAME_OVER;
         }
 

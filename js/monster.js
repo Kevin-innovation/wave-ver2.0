@@ -3,6 +3,7 @@
  */
 
 import { player } from './player.js';
+import { earnCoins } from './economy.js';
 
 // ==================== 몬스터 배열 (최대 30개) ====================
 export const monsters = [];
@@ -133,6 +134,9 @@ export function updateMonsters(skills) {
                 monsters[i].dx = 0;
                 monsters[i].dy = 0;
                 monstersRemoved++;
+                
+                // 코인 획득! 🪙
+                earnCoins(1);
             }
         }
     }

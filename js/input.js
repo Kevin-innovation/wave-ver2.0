@@ -4,6 +4,9 @@
 
 import { resetGame } from './game.js';
 import { GAME_STATES } from './utils.js';
+import { switchToGame, switchToShop, switchToUpgrade, getCurrentUIState, UI_STATES } from './ui.js';
+import { handleShopClick } from './shop.js';
+import { handleUpgradeClick } from './upgrade.js';
 
 // ==================== 키보드 입력 상태 ====================
 export const keys = {
@@ -21,8 +24,9 @@ export const keys = {
 /**
  * 키보드 이벤트 리스너 설정
  * @param {Object} gameState - 게임 상태 객체
+ * @param {HTMLCanvasElement} canvas - 캔버스 요소
  */
-export function setupInputListeners(gameState) {
+export function setupInputListeners(gameState, canvas) {
     // 키보드 눌림 이벤트
     document.addEventListener('keydown', (event) => {
         switch(event.code) {
@@ -68,6 +72,19 @@ export function setupInputListeners(gameState) {
                 keys.l = true;
                 event.preventDefault();
                 break;
+            // 탭 전환 키 (1,2,3)
+            case 'Digit1':
+                switchToGame();
+                event.preventDefault();
+                break;
+            case 'Digit2':
+                switchToShop();
+                event.preventDefault();
+                break;
+            case 'Digit3':
+                switchToUpgrade();
+                event.preventDefault();
+                break;
         }
     });
 
@@ -102,6 +119,24 @@ export function setupInputListeners(gameState) {
             case 'KeyL':
                 keys.l = false;
                 break;
+        }
+    });
+    
+    // 마우스 클릭 이벤트
+    canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        
+        // 현재 UI 상태에 따라 클릭 처리
+        const currentUI = getCurrentUIState();
+        
+        if (currentUI === UI_STATES.SHOP) {
+            // 상점에서 클릭 처리
+            handleShopClick(mouseX, mouseY, canvas.width);
+        } else if (currentUI === UI_STATES.UPGRADE) {
+            // 성장 화면에서 클릭 처리
+            handleUpgradeClick(mouseX, mouseY, canvas.width);
         }
     });
 } 
