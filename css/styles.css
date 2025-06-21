@@ -1,0 +1,38 @@
+body {
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.game-container {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+canvas {
+    border: 2px solid #333;
+    background-color: white;
+}
+
+.instructions {
+    margin-top: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
+.code-explanation {
+    margin-top: 20px;
+    text-align: left;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 12px;
+} 
