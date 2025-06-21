@@ -50,24 +50,74 @@
 
 ## 🛠️ 개발 정보
 
+### 📁 프로젝트 구조 (v2.0 리팩토링)
+```
+wave-ver2.0/
+├── index.html              # 메인 HTML 파일
+├── css/
+│   └── styles.css          # 스타일시트
+├── js/
+│   ├── game.js             # 메인 게임 로직 & 루프
+│   ├── player.js           # 플레이어 관련 기능
+│   ├── monster.js          # 몬스터 시스템
+│   ├── skills.js           # HJKL 스킬 시스템
+│   ├── input.js            # 키보드 입력 처리
+│   ├── render.js           # 렌더링 & UI
+│   └── utils.js            # 유틸리티 & 상수
+└── README.md
+```
+
 ### 최신 업데이트 (v2.0)
+- ✅ **코드 모듈화**: 단일 HTML 파일을 기능별 7개 모듈로 분리
+- ✅ **ES6 모듈 시스템**: import/export를 활용한 현대적 코드 구조
 - ✅ HJKL 스킬 시스템 추가
 - ✅ WASD 키 지원 
 - ✅ 게임 밸런스 대폭 개선
 - ✅ 스킬 쿨다운 UI 추가
 - ✅ 시각적 피드백 강화
+- ✅ **유지보수성 향상**: 각 기능별로 독립적인 파일 관리
 
 ### 기술 스택
 - **HTML5 Canvas**: 게임 렌더링
-- **JavaScript**: 게임 로직 및 물리 엔진
+- **JavaScript ES6+**: 모듈 시스템 및 게임 로직
+- **CSS3**: 스타일링
 - **GitHub Pages**: 웹 호스팅
 
 ## 📦 로컬 실행 방법
-1. 이 저장소를 클론하세요
+
+### 방법 1: HTTP 서버 실행 (권장)
+**ES6 모듈을 사용하므로 HTTP 서버가 필요합니다.**
+
+#### Python 사용:
 ```bash
+# 저장소 클론
 git clone https://github.com/Kevin-innovation/wave-ver2.0.git
+cd wave-ver2.0
+
+# HTTP 서버 실행
+python3 -m http.server 8080
+
+# 브라우저에서 접속
+# http://localhost:8080
 ```
-2. `index.html` 파일을 웹 브라우저에서 열어서 실행하세요
+
+#### Node.js 사용:
+```bash
+# npx serve 사용
+npx serve .
+
+# 또는 http-server 사용
+npx http-server .
+```
+
+### 방법 2: VS Code Live Server
+1. VS Code에서 프로젝트 폴더 열기
+2. Live Server 확장 프로그램 설치
+3. index.html에서 "Go Live" 클릭
+
+### ⚠️ 주의사항
+- **직접 파일 열기 불가**: `file://` 프로토콜로는 ES6 모듈 import가 차단됩니다
+- **HTTP 서버 필수**: 위의 방법 중 하나를 사용해야 게임이 정상 작동합니다
 
 ## 🤝 기여하기
 - 버그 리포트나 기능 제안은 [Issues](https://github.com/Kevin-innovation/wave-ver2.0/issues)에 남겨주세요
