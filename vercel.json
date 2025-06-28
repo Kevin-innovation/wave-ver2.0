@@ -3,5 +3,15 @@
   "name": "wave-ver2",
   "public": true,
   "trailingSlash": false,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.+)",
+      "dest": "/$1"
+    }
+  ]
 } 
