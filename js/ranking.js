@@ -112,17 +112,26 @@ function setupRankingEventListeners() {
  * 랭킹 데이터 로드
  */
 async function loadRankingData() {
+    console.log('🔧 랭킹 데이터 로드 시작...');
+    console.log('🔧 현재 로그인 상태:', isLoggedIn());
+    
     try {
         // 전체 랭킹 조회
+        console.log('🔧 전체 랭킹 조회 시작...');
         const rankings = await getRankings(50); // 상위 50명
+        console.log('🔧 랭킹 데이터 수신:', rankings.length, '개');
         currentRankings = rankings;
         updateRankingDisplay(rankings);
         
         // 개인 최고 기록 조회 (로그인한 경우)
         if (isLoggedIn()) {
+            console.log('🔧 개인 최고 기록 조회 시작...');
             const personal = await getPersonalBestRanking();
+            console.log('🔧 개인 최고 기록:', personal);
             personalBest = personal;
             updatePersonalBestDisplay(personal);
+        } else {
+            console.log('🔧 로그인하지 않아 개인 기록 조회 생략');
         }
         
     } catch (error) {

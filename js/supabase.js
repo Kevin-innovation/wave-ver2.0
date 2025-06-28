@@ -11,6 +11,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Supabase 클라이언트 생성
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// 디버깅: 전역 변수로 노출
+window.supabase = supabase;
+console.log('🔧 Supabase 클라이언트 초기화 완료:', SUPABASE_URL);
+
 // 현재 사용자 상태
 export let currentUser = null;
 

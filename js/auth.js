@@ -333,12 +333,19 @@ async function mergeGameData(cloudData) {
  * 현재 로그인 상태 확인
  */
 export function isLoggedIn() {
-    return currentUser !== null;
+    const loggedIn = currentUser !== null;
+    console.log('🔧 로그인 상태 확인:', loggedIn, currentUser?.email || 'No user');
+    return loggedIn;
 }
 
 /**
  * 현재 사용자 정보 반환
  */
 export function getCurrentUserInfo() {
+    console.log('🔧 현재 사용자 정보:', currentUser);
     return currentUser;
-} 
+}
+
+// 디버깅: 전역 변수로 노출
+window.currentUser = currentUser;
+window.isLoggedIn = isLoggedIn; 
