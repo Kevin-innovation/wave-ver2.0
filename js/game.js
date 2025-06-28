@@ -15,9 +15,11 @@ import { monsters, resetMonsters, updateMonsters, spawnWaveMonsters, getActiveMo
 import { skills, resetSkills, updateSkills, handleSkillInputs } from './skills.js';
 import { keys, setupInputListeners } from './input.js';
 import { renderGame } from './render.js';
-import { initEconomy, updateBestScore } from './economy.js';
+import { initEconomy, updateBestScore, saveGameDataToSupabase } from './economy.js';
 import { initUpgradeSystem } from './upgrade.js';
 import { updateSkillConfig } from './skills.js';
+import { initAuthUI } from './auth.js';
+import { initRankingSystem, submitScoreToRanking } from './ranking.js';
 import './ui.js';  // UI 모듈 로드
 import './shop.js';  // 상점 모듈 로드
 
@@ -53,6 +55,12 @@ export function initGame() {
     
     // 스킬 설정 업데이트 (업그레이드 반영)
     updateSkillConfig();
+    
+    // 인증 시스템 초기화
+    initAuthUI();
+    
+    // 랭킹 시스템 초기화
+    initRankingSystem();
     
     // 키보드 이벤트 리스너 설정
     setupInputListeners(gameState, canvas);
@@ -111,9 +119,7 @@ function updateGame() {
 
         // 플레이어와 몬스터 충돌 검사
         if (checkPlayerMonsterCollisions()) {
-            // 게임 오버 시 최고 기록 업데이트
-            updateBestScore(gameData.currentWave);
-            gameState.current = GAME_STATES.GAME_OVER;
+            handleGameOver();
         }
 
         // ==================== 웨이브 클리어 검사 ====================
@@ -122,6 +128,42 @@ function updateGame() {
             gameData.monstersPerWave++;
             gameData.waveStarted = false;
         }
+    }
+}
+
+/**
+ * 게임 오버 처리
+ */
+async function handleGameOver() {
+    // 최고 기록 업데이트
+    const isNewRecord = updateBestScore(gameData.currentWave);
+    
+    // 랭킹에 점수 등록 (로그인한 경우)
+    try {
+        const rankingResult = await submitScoreToRanking(gameData.currentWave);
+        if (rankingResult.success) {
+            console.log('🏆 랭킹 등록 완료!');
+        }
+    } catch (error) {
+        console.error('❌ 랭킹 등록 중 오류:', error);
+    }
+    
+    // 클라우드 데이터 동기화 (로그인한 경우)
+    try {
+        const syncResult = await saveGameDataToSupabase();
+        if (syncResult.success) {
+            console.log('☁️ 클라우드 동기화 완료!');
+        }
+    } catch (error) {
+        console.error('❌ 클라우드 동기화 중 오류:', error);
+    }
+    
+    // 게임 오버 상태로 변경
+    gameState.current = GAME_STATES.GAME_OVER;
+    
+    // 게임 오버 메시지 출력
+    if (isNewRecord) {
+        console.log(`🎉 새로운 최고 기록 달성! ${gameData.currentWave} 웨이브`);
     }
 }
 

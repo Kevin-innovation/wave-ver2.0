@@ -4,7 +4,7 @@
 
 import { resetGame } from './game.js';
 import { GAME_STATES } from './utils.js';
-import { switchToGame, switchToShop, switchToUpgrade, getCurrentUIState, UI_STATES } from './ui.js';
+import { switchToGame, switchToShop, switchToUpgrade, switchToRanking, getCurrentUIState, UI_STATES } from './ui.js';
 import { handleShopClick } from './shop.js';
 import { handleUpgradeClick } from './upgrade.js';
 
@@ -72,7 +72,7 @@ export function setupInputListeners(gameState, canvas) {
                 keys.l = true;
                 event.preventDefault();
                 break;
-            // 탭 전환 키 (1,2,3)
+            // 탭 전환 키 (1,2,3,4)
             case 'Digit1':
                 switchToGame();
                 event.preventDefault();
@@ -83,6 +83,10 @@ export function setupInputListeners(gameState, canvas) {
                 break;
             case 'Digit3':
                 switchToUpgrade();
+                event.preventDefault();
+                break;
+            case 'Digit4':
+                switchToRanking();
                 event.preventDefault();
                 break;
         }

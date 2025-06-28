@@ -2,6 +2,8 @@
  * 게임 경제 시스템 (코인, 상점 등)
  */
 
+import { saveGameDataToSupabase as saveToCloud } from './supabase.js';
+
 // ==================== 코인 시스템 ====================
 export let gameData = {
     coins: 0,
@@ -12,6 +14,9 @@ export let gameData = {
         j: false,  // 실드 (잠금)
         k: false,  // 슬로우 (잠금)
         l: false   // 스톱 (잠금)
+    },
+    skillLevels: {
+        h: 1, j: 1, k: 1, l: 1
     }
 };
 
@@ -29,6 +34,9 @@ export function loadGameData() {
             gameData.unlockedSkills = parsedData.unlockedSkills || {
                 h: true, j: false, k: false, l: false
             };
+            gameData.skillLevels = parsedData.skillLevels || {
+                h: 1, j: 1, k: 1, l: 1
+            };
             console.log('게임 데이터 로드 완료:', gameData);
         }
     } catch (error) {
@@ -37,6 +45,7 @@ export function loadGameData() {
         gameData.totalMonstersAvoided = 0;
         gameData.bestScore = 0;
         gameData.unlockedSkills = { h: true, j: false, k: false, l: false };
+        gameData.skillLevels = { h: 1, j: 1, k: 1, l: 1 };
     }
 }
 
@@ -49,6 +58,23 @@ export function saveGameData() {
         console.log('게임 데이터 저장 완료:', gameData);
     } catch (error) {
         console.error('게임 데이터 저장 실패:', error);
+    }
+}
+
+/**
+ * 게임 데이터를 Supabase에 저장
+ */
+export async function saveGameDataToSupabase() {
+    try {
+        // 로컬 저장도 함께 실행
+        saveGameData();
+        
+        // 클라우드 저장 시도
+        const result = await saveToCloud(gameData);
+        return result;
+    } catch (error) {
+        console.error('클라우드 저장 중 오류:', error);
+        return { success: false, error: error.message };
     }
 }
 

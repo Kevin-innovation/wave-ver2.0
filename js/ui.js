@@ -5,12 +5,14 @@
 import { isSkillUnlocked, getCoins } from './economy.js';
 import { canPerformGacha } from './shop.js';
 import { getSkillLevel, canUpgradeSkill, getUpgradeCost, UPGRADE_CONFIG } from './upgrade.js';
+import { showRankingTab, hideRankingTab } from './ranking.js';
 
 // ==================== UI 상태 정의 ====================
 export const UI_STATES = {
     GAME: 0,     // 메인 게임 화면
     SHOP: 1,     // 상점 화면
-    UPGRADE: 2   // 성장/업그레이드 화면
+    UPGRADE: 2,  // 성장/업그레이드 화면
+    RANKING: 3   // 랭킹 화면
 };
 
 // ==================== UI 상태 관리 ====================
@@ -35,10 +37,18 @@ export function setUIState(newState) {
     const stateNames = {
         [UI_STATES.GAME]: '게임',
         [UI_STATES.SHOP]: '상점',
-        [UI_STATES.UPGRADE]: '성장'
+        [UI_STATES.UPGRADE]: '성장',
+        [UI_STATES.RANKING]: '랭킹'
     };
     
     console.log(`UI 상태 변경: ${stateNames[oldState]} → ${stateNames[newState]}`);
+    
+    // 랭킹 탭 표시/숨기기
+    if (newState === UI_STATES.RANKING) {
+        showRankingTab();
+    } else {
+        hideRankingTab();
+    }
 }
 
 /**
@@ -63,21 +73,29 @@ export function switchToUpgrade() {
 }
 
 /**
+ * 랭킹 화면으로 전환
+ */
+export function switchToRanking() {
+    setUIState(UI_STATES.RANKING);
+}
+
+/**
  * 탭 버튼 렌더링
  * @param {CanvasRenderingContext2D} ctx - 캔버스 컨텍스트
  * @param {number} canvasWidth - 캔버스 너비
  */
 export function renderTabButtons(ctx, canvasWidth) {
-    const tabWidth = 100;
+    const tabWidth = 80;
     const tabHeight = 40;
     const tabY = 10;
-    const spacing = 10;
+    const spacing = 8;
     
     // 탭 정보
     const tabs = [
-        { state: UI_STATES.GAME, label: '게임', x: canvasWidth - (tabWidth * 3 + spacing * 2) - 20 },
-        { state: UI_STATES.SHOP, label: '상점', x: canvasWidth - (tabWidth * 2 + spacing) - 20 },
-        { state: UI_STATES.UPGRADE, label: '성장', x: canvasWidth - tabWidth - 20 }
+        { state: UI_STATES.GAME, label: '게임', x: canvasWidth - (tabWidth * 4 + spacing * 3) - 20 },
+        { state: UI_STATES.SHOP, label: '상점', x: canvasWidth - (tabWidth * 3 + spacing * 2) - 20 },
+        { state: UI_STATES.UPGRADE, label: '성장', x: canvasWidth - (tabWidth * 2 + spacing) - 20 },
+        { state: UI_STATES.RANKING, label: '랭킹', x: canvasWidth - tabWidth - 20 }
     ];
     
     tabs.forEach(tab => {
@@ -97,7 +115,7 @@ export function renderTabButtons(ctx, canvasWidth) {
         
         // 탭 텍스트
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(tab.label, tab.x + tabWidth/2, tabY + 26);
     });
@@ -178,7 +196,7 @@ export function renderShopScreen(ctx, canvasWidth, canvasHeight) {
     // 하단 안내
     ctx.fillStyle = '#666666';
     ctx.font = '16px Arial';
-    ctx.fillText('1/2/3 키로 탭 전환', canvasWidth/2, canvasHeight - 30);
+    ctx.fillText('1/2/3/4 키로 탭 전환', canvasWidth/2, canvasHeight - 30);
     
     // 텍스트 정렬 리셋
     ctx.textAlign = 'left';
@@ -199,101 +217,106 @@ export function renderUpgradeScreen(ctx, canvasWidth, canvasHeight) {
     ctx.fillStyle = '#2E7D32';
     ctx.font = 'bold 32px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('⚡ 스킬 성장', canvasWidth/2, 120);
+    ctx.fillText('📈 성장 시스템', canvasWidth/2, 120);
     
     // 설명
     ctx.font = '18px Arial';
-    ctx.fillText('코인으로 스킬을 업그레이드하세요!', canvasWidth/2, 160);
+    ctx.fillText('코인으로 스킬을 업그레이드하세요!', canvasWidth/2, 150);
+    
+    // 스킬별 업그레이드 정보
+    const skills = [
+        { key: 'h', name: 'H-대시', icon: '⚡', color: '#2196F3' },
+        { key: 'j', name: 'J-실드', icon: '🛡️', color: '#4CAF50' },
+        { key: 'k', name: 'K-슬로우', icon: '🐌', color: '#FF9800' },
+        { key: 'l', name: 'L-스톱', icon: '⏸️', color: '#F44336' }
+    ];
+    
+    const startY = 180;
+    const skillHeight = 100;
+    const skillWidth = 350;
+    const skillX = canvasWidth/2 - skillWidth/2;
+    
+    skills.forEach((skill, index) => {
+        const y = startY + index * (skillHeight + 10);
+        
+        // 스킬이 해제되지 않은 경우 회색으로 표시
+        const isUnlocked = isSkillUnlocked(skill.key);
+        const skillLevel = getSkillLevel(skill.key);
+        const canUpgrade = canUpgradeSkill(skill.key);
+        const upgradeCost = getUpgradeCost(skill.key);
+        
+        // 배경색
+        ctx.fillStyle = isUnlocked ? skill.color + '20' : '#CCCCCC20';
+        ctx.fillRect(skillX, y, skillWidth, skillHeight);
+        
+        // 테두리
+        ctx.strokeStyle = isUnlocked ? skill.color : '#CCCCCC';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(skillX, y, skillWidth, skillHeight);
+        
+        // 스킬 정보
+        ctx.fillStyle = isUnlocked ? '#333333' : '#999999';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${skill.icon} ${skill.name}`, skillX + 15, y + 30);
+        
+        if (isUnlocked) {
+            // 레벨 표시
+            ctx.font = '16px Arial';
+            ctx.fillText(`레벨: ${skillLevel}/20`, skillX + 15, y + 55);
+            
+            // 업그레이드 비용 및 상태
+            if (skillLevel < 20) {
+                ctx.fillStyle = canUpgrade ? '#4CAF50' : '#F44336';
+                ctx.fillText(`업그레이드: ${upgradeCost}코인`, skillX + 15, y + 75);
+                
+                if (!canUpgrade) {
+                    ctx.fillStyle = '#F44336';
+                    ctx.fillText('코인 부족', skillX + 200, y + 75);
+                }
+            } else {
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('최대 레벨 달성!', skillX + 15, y + 75);
+            }
+        } else {
+            ctx.fillStyle = '#999999';
+            ctx.font = '16px Arial';
+            ctx.fillText('스킬을 먼저 해제하세요', skillX + 15, y + 55);
+        }
+    });
     
     // 현재 코인 표시
     ctx.fillStyle = '#FF9800';
-    ctx.font = '16px Arial';
-    ctx.fillText(`보유 코인: 🪙 ${getCoins()}`, canvasWidth/2, 185);
-    
-    // 스킬 업그레이드 박스들
-    const skillData = [
-        { key: 'h', name: 'H-대시', desc: '쿨타임↓ 거리↑', y: 220 },
-        { key: 'j', name: 'J-실드', desc: '쿨타임↓ 지속시간↑', y: 280 },
-        { key: 'k', name: 'K-슬로우', desc: '쿨타임↓ 지속시간↑ 강도↑', y: 340 },
-        { key: 'l', name: 'L-스톱', desc: '쿨타임↓ 지속시간↑', y: 400 }
-    ];
-    
-    skillData.forEach(skill => {
-        const level = getSkillLevel(skill.key);
-        const upgradeCheck = canUpgradeSkill(skill.key);
-        const isUnlocked = isSkillUnlocked(skill.key);
-        
-        // 스킬 박스 색상 결정
-        let boxColor, borderColor, textColor;
-        if (!isUnlocked) {
-            boxColor = '#EEEEEE';
-            borderColor = '#BDBDBD';
-            textColor = '#757575';
-        } else if (upgradeCheck.canUpgrade) {
-            boxColor = '#C8E6C9';
-            borderColor = '#4CAF50';
-            textColor = '#1B5E20';
-        } else if (level >= UPGRADE_CONFIG.maxLevel) {
-            boxColor = '#FFE0B2';
-            borderColor = '#FF9800';
-            textColor = '#E65100';
-        } else {
-            boxColor = '#FFCDD2';
-            borderColor = '#F44336';
-            textColor = '#C62828';
-        }
-        
-        // 스킬 박스
-        ctx.fillStyle = boxColor;
-        ctx.fillRect(canvasWidth/2 - 150, skill.y, 300, 40);
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(canvasWidth/2 - 150, skill.y, 300, 40);
-        
-        // 스킬 정보
-        ctx.fillStyle = textColor;
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'left';
-        
-        if (!isUnlocked) {
-            ctx.fillText(`${skill.name} (🔒 잠김)`, canvasWidth/2 - 140, skill.y + 16);
-            ctx.font = '12px Arial';
-            ctx.fillText('상점에서 스킬을 먼저 획득하세요', canvasWidth/2 - 140, skill.y + 32);
-        } else {
-            ctx.fillText(`${skill.name} Lv.${level}`, canvasWidth/2 - 140, skill.y + 16);
-            ctx.font = '12px Arial';
-            ctx.fillText(skill.desc, canvasWidth/2 - 140, skill.y + 32);
-        }
-        
-        // 우측 정보 (가격 또는 상태)
-        ctx.textAlign = 'right';
-        ctx.font = 'bold 14px Arial';
-        
-        if (!isUnlocked) {
-            ctx.fillText('잠김', canvasWidth/2 + 140, skill.y + 25);
-        } else if (level >= UPGRADE_CONFIG.maxLevel) {
-            ctx.fillText('MAX', canvasWidth/2 + 140, skill.y + 25);
-        } else {
-            const cost = getUpgradeCost(skill.key, level);
-            if (upgradeCheck.canUpgrade) {
-                ctx.fillStyle = '#2E7D32';
-                ctx.fillText(`💰 ${cost}`, canvasWidth/2 + 140, skill.y + 20);
-                ctx.font = '10px Arial';
-                ctx.fillText('클릭!', canvasWidth/2 + 140, skill.y + 32);
-            } else {
-                ctx.fillStyle = '#D32F2F';
-                ctx.fillText(`💰 ${cost}`, canvasWidth/2 + 140, skill.y + 20);
-                ctx.font = '10px Arial';
-                ctx.fillText('부족', canvasWidth/2 + 140, skill.y + 32);
-            }
-        }
-    });
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`보유 코인: 🪙 ${getCoins()}`, canvasWidth/2, canvasHeight - 60);
     
     // 하단 안내
     ctx.fillStyle = '#666666';
     ctx.font = '16px Arial';
+    ctx.fillText('1/2/3/4 키로 탭 전환', canvasWidth/2, canvasHeight - 30);
+    
+    // 텍스트 정렬 리셋
+    ctx.textAlign = 'left';
+}
+
+/**
+ * 랭킹 화면 렌더링 (캔버스 위에 HTML 요소 사용)
+ * @param {CanvasRenderingContext2D} ctx - 캔버스 컨텍스트
+ * @param {number} canvasWidth - 캔버스 너비
+ * @param {number} canvasHeight - 캔버스 높이
+ */
+export function renderRankingScreen(ctx, canvasWidth, canvasHeight) {
+    // 배경만 렌더링 (실제 랭킹은 HTML 요소로 표시)
+    ctx.fillStyle = '#F0F8FF';
+    ctx.fillRect(0, 60, canvasWidth, canvasHeight - 60);
+    
+    // 안내 메시지
+    ctx.fillStyle = '#666666';
+    ctx.font = '16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('1/2/3 키로 탭 전환 | 스킬 박스 클릭으로 업그레이드', canvasWidth/2, canvasHeight - 30);
+    ctx.fillText('랭킹은 아래 영역에서 확인하세요', canvasWidth/2, canvasHeight - 30);
+    ctx.fillText('1/2/3/4 키로 탭 전환', canvasWidth/2, canvasHeight - 10);
     
     // 텍스트 정렬 리셋
     ctx.textAlign = 'left';

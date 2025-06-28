@@ -1,0 +1,32 @@
+{
+  "name": "wave-ver2",
+  "version": "2.0.0",
+  "description": "웨이브 몬스터 피하기 게임 with 랭킹 시스템",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8080",
+    "start": "python3 -m http.server 8080",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "keywords": [
+    "game",
+    "canvas",
+    "javascript",
+    "supabase",
+    "vercel",
+    "oauth"
+  ],
+  "author": "DLAB Kevin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kevin-innovation/wave-ver2.0.git"
+  }
+} 
