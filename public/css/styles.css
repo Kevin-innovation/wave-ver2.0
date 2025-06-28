@@ -1,0 +1,457 @@
+body {
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.game-container {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    width: 100%;
+}
+
+canvas {
+    border: 2px solid #333;
+    background-color: white;
+}
+
+.instructions {
+    margin-top: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
+.code-explanation {
+    margin-top: 20px;
+    text-align: left;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+/* ==================== 인증 UI 스타일 ==================== */
+.auth-container {
+    margin: 20px 0;
+    background: #f8f9ff;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e6ff;
+}
+
+.auth-section h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.login-section {
+    text-align: center;
+}
+
+.google-login-btn {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.google-login-btn:hover {
+    background: #357ae8;
+}
+
+.google-login-btn:disabled {
+    background: #9aa0a6;
+    cursor: not-allowed;
+}
+
+.google-icon {
+    font-size: 16px;
+}
+
+.auth-info {
+    margin-top: 8px;
+    color: #666;
+    font-size: 12px;
+}
+
+.user-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.user-info #user-name {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.user-info #user-email {
+    font-size: 12px;
+    color: #666;
+}
+
+.user-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.sync-btn, .logout-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sync-btn {
+    background: #28a745;
+    color: white;
+}
+
+.sync-btn:hover {
+    background: #218838;
+}
+
+.logout-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.logout-btn:hover {
+    background: #c82333;
+}
+
+.sync-status {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    padding: 4px;
+}
+
+/* ==================== 랭킹 보드 스타일 ==================== */
+.ranking-section {
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.ranking-section h2 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    font-size: 20px;
+}
+
+.ranking-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.refresh-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.refresh-btn:hover {
+    background: #0056b3;
+}
+
+.refresh-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.ranking-info {
+    font-size: 12px;
+    color: #666;
+}
+
+/* 개인 최고 기록 섹션 */
+.personal-best-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.personal-best-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.personal-best {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+}
+
+.login-required {
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+}
+
+.no-record {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.no-record-text {
+    font-weight: bold;
+}
+
+.encouragement {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.personal-record-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.personal-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.personal-score {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.personal-rank {
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.personal-details {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* 랭킹 리스트 */
+.ranking-list-container {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ranking-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px 100px;
+    background: #343a40;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 12px 8px;
+}
+
+.ranking-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ranking-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px 100px;
+    padding: 12px 8px;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s;
+}
+
+.ranking-item:hover {
+    background: #f8f9fa;
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+/* 순위별 스타일 */
+.rank-1st {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+    font-weight: bold;
+}
+
+.rank-2nd {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e2e8f0 100%);
+    font-weight: bold;
+}
+
+.rank-3rd {
+    background: linear-gradient(135deg, #cd7f32 0%, #f6ad55 100%);
+    font-weight: bold;
+}
+
+.rank-top10 {
+    background: #e3f2fd;
+}
+
+.personal-record {
+    background: #e8f5e8 !important;
+    border: 2px solid #28a745;
+}
+
+.rank-col, .score-col, .date-col {
+    text-align: center;
+}
+
+.name-col {
+    text-align: left;
+    font-weight: 500;
+}
+
+.loading-message, .empty-ranking, .error-message {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.error-message {
+    color: #dc3545;
+}
+
+.ranking-footer {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.ranking-note {
+    margin: 0;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* ==================== 탭 시스템 업데이트 ==================== */
+.tab-buttons {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.tab-button {
+    padding: 12px 20px;
+    border: none;
+    background: #f8f9fa;
+    color: #495057;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+}
+
+.tab-button:hover {
+    background: #e9ecef;
+    color: #212529;
+}
+
+.tab-button.active {
+    background: white;
+    color: #007bff;
+    border-color: #007bff;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
+}
+
+.tab-container {
+    min-height: 400px;
+    border: 1px solid #dee2e6;
+    border-radius: 0 6px 6px 6px;
+    background: white;
+}
+
+.tab-content {
+    padding: 20px;
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .game-container {
+        padding: 15px;
+    }
+    
+    .ranking-header,
+    .ranking-item {
+        grid-template-columns: 60px 1fr 80px 80px;
+        font-size: 11px;
+        padding: 8px 4px;
+    }
+    
+    .user-actions {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .personal-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+} 
