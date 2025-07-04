@@ -321,14 +321,14 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
     const stats = getPlayerStats();
     const unlockedIds = new Set(getUnlockedAchievements());
     
-    // 스크롤 영역 설정
+    // 스크롤 영역 설정 (캔버스 크기에 맞게 조정)
     const scrollY = 0; // 나중에 스크롤 기능 추가 가능
-    const startY = 160;
-    const achievementHeight = 90;
-    const achievementWidth = 360;
-    const achievementX = canvasWidth/2 - achievementWidth/2;
-    const itemsPerRow = 2;
-    const rowSpacing = 10;
+    const startY = 170;
+    const achievementHeight = 70;
+    const achievementWidth = 240;
+    const itemsPerRow = 3; // 한 줄에 3개씩 배치
+    const rowSpacing = 8;
+    const colSpacing = 10;
     
     // 업적들을 등급별로 정렬
     const sortedAchievements = Object.values(ACHIEVEMENTS).sort((a, b) => {
@@ -342,19 +342,23 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
         return tierOrder[a.tier] - tierOrder[b.tier];
     });
     
-    // 업적 렌더링
+    // 업적 렌더링 (3열 그리드 레이아웃)
     sortedAchievements.forEach((achievement, index) => {
         const row = Math.floor(index / itemsPerRow);
         const col = index % itemsPerRow;
-        const x = (canvasWidth / itemsPerRow) * col + 20;
+        
+        // 3열 레이아웃에 맞게 x 좌표 계산
+        const totalWidth = itemsPerRow * achievementWidth + (itemsPerRow - 1) * colSpacing;
+        const startX = (canvasWidth - totalWidth) / 2;
+        const x = startX + col * (achievementWidth + colSpacing);
         const y = startY + row * (achievementHeight + rowSpacing) - scrollY;
         
         // 화면 밖이면 스킵
-        if (y < 60 || y > canvasHeight) return;
+        if (y + achievementHeight < 60 || y > canvasHeight - 20) return;
         
         const isUnlocked = unlockedIds.has(achievement.id);
         
-        renderAchievementCard(ctx, achievement, x, y, achievementWidth - 40, achievementHeight, isUnlocked);
+        renderAchievementCard(ctx, achievement, x, y, achievementWidth, achievementHeight, isUnlocked);
     });
     
     // 하단 안내
@@ -434,27 +438,27 @@ function renderAchievementCard(ctx, achievement, x, y, width, height, isUnlocked
         ctx.strokeRect(x + 8, y + 8, width - 16, height - 16);
     }
     
-    // 아이콘
-    ctx.font = '36px Arial';
+    // 아이콘 (크기 조정)
+    ctx.font = '28px Arial';
     ctx.textAlign = 'center';
     ctx.fillStyle = isUnlocked ? '#000000' : '#666666';
-    ctx.fillText(achievement.icon, x + width/2, y + 40);
+    ctx.fillText(achievement.icon, x + width/2, y + 30);
     
-    // 업적 이름
-    ctx.font = 'bold 14px Arial';
+    // 업적 이름 (크기 조정)
+    ctx.font = 'bold 12px Arial';
     ctx.fillStyle = isUnlocked ? '#000000' : '#999999';
-    ctx.fillText(achievement.name, x + width/2, y + 58);
+    ctx.fillText(achievement.name, x + width/2, y + 45);
     
     // 보상 표시 (달성된 경우)
     if (isUnlocked) {
-        ctx.font = '12px Arial';
+        ctx.font = '10px Arial';
         ctx.fillStyle = '#4CAF50';
-        ctx.fillText(`+${achievement.reward} 코인`, x + width/2, y + 74);
+        ctx.fillText(`+${achievement.reward} 코인`, x + width/2, y + 58);
     } else {
         // 미달성 시 물음표
-        ctx.font = '24px Arial';
+        ctx.font = '18px Arial';
         ctx.fillStyle = '#CCCCCC';
-        ctx.fillText('?', x + width/2, y + 74);
+        ctx.fillText('?', x + width/2, y + 58);
     }
     
     // 텍스트 정렬 리셋
