@@ -20,6 +20,7 @@ import { initUpgradeSystem } from './upgrade.js';
 import { updateSkillConfig } from './skills.js';
 import { initAuthUI } from './auth.js';
 import { initRankingSystem, submitScoreToRanking } from './ranking.js';
+import { initAchievementSystem, startGameSession, endGameSession, checkAchievements } from './achievements.js';
 import './ui.js';  // UI 모듈 로드
 import './shop.js';  // 상점 모듈 로드
 
@@ -62,6 +63,9 @@ export function initGame() {
     // 랭킹 시스템 초기화
     initRankingSystem();
     
+    // 도전과제 시스템 초기화
+    initAchievementSystem();
+    
     // 키보드 이벤트 리스너 설정
     setupInputListeners(gameState, canvas);
     
@@ -88,6 +92,9 @@ export function resetGame() {
     resetPlayer();
     resetMonsters();
     resetSkills();
+    
+    // 새 게임 세션 시작 (도전과제)
+    startGameSession();
 }
 
 /**
@@ -135,6 +142,9 @@ function updateGame() {
  * 게임 오버 처리
  */
 async function handleGameOver() {
+    // 도전과제 통계 업데이트 (게임 종료)
+    endGameSession(gameData.currentWave, gameData.monstersAvoided, 0); // 코인은 실시간으로 업데이트됨
+    
     // 최고 기록 업데이트
     const isNewRecord = updateBestScore(gameData.currentWave);
     

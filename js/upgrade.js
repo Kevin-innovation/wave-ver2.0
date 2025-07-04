@@ -3,6 +3,7 @@
  */
 
 import { getCoins, spendCoins, isSkillUnlocked } from './economy.js';
+import { recordUpgradePurchase } from './achievements.js';
 
 // ==================== 업그레이드 설정 ====================
 export const UPGRADE_CONFIG = {
@@ -168,6 +169,9 @@ export function upgradeSkill(skillKey) {
     // 레벨 업
     upgradeData.levels[skillKey]++;
     saveUpgradeData();
+    
+    // 도전과제 통계 기록
+    recordUpgradePurchase();
     
     // 스킬 설정 즉시 업데이트 (동적 import로 순환 의존성 방지)
     import('./skills.js').then(skillsModule => {

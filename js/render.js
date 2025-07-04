@@ -7,7 +7,7 @@ import { renderMonsters } from './monster.js';
 import { renderSkillUI } from './skills.js';
 import { GAME_STATES } from './utils.js';
 import { getCoins, isSkillUnlocked, getBestScore } from './economy.js';
-import { getCurrentUIState, UI_STATES, renderTabButtons, renderShopScreen, renderUpgradeScreen, renderRankingScreen } from './ui.js';
+import { getCurrentUIState, UI_STATES, renderTabButtons, renderShopScreen, renderUpgradeScreen, renderAchievementsScreen } from './ui.js';
 import { updateGachaAnimation, renderGachaAnimation } from './shop.js';
 
 /**
@@ -58,9 +58,9 @@ export function renderGame(ctx, canvasWidth, canvasHeight, gameState, gameData, 
     } else if (currentUI === UI_STATES.UPGRADE) {
         // 성장 화면
         renderUpgradeScreen(ctx, canvasWidth, canvasHeight);
-    } else if (currentUI === UI_STATES.RANKING) {
-        // 랭킹 화면
-        renderRankingScreen(ctx, canvasWidth, canvasHeight);
+    } else if (currentUI === UI_STATES.ACHIEVEMENTS) {
+        // 도전과제 화면
+        renderAchievementsScreen(ctx, canvasWidth, canvasHeight);
     }
     
     // 뽑기 애니메이션은 항상 최상위에 렌더링
