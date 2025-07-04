@@ -1,0 +1,154 @@
+# Wave Ver 2.0 - Cursor Rules
+
+## 🎮 프로젝트 개요
+JavaScript Canvas 기반 웨이브 서바이벌 게임
+
+## 📝 코딩 스타일
+
+### JavaScript 규칙
+- ES6+ 문법 사용 (import/export, arrow functions, const/let)
+- 모듈화된 구조 유지 (js/ 폴더의 각 파일은 특정 기능 담당)
+- 함수와 변수명은 camelCase 사용
+- 상수는 UPPER_SNAKE_CASE 사용
+- 한국어 주석 필수 (함수 설명, 복잡한 로직)
+
+### 코드 구조
+```javascript
+/**
+ * 함수 설명 (한국어)
+ * @param {type} paramName - 매개변수 설명
+ * @returns {type} - 반환값 설명
+ */
+export function functionName(paramName) {
+    // 구현
+}
+```
+
+### 파일 구조
+- `js/` - 게임 로직 모듈들
+- `css/` - 스타일시트
+- `public/` - GitHub Pages 배포용 (js/, css/ 복사본)
+- `index.html` - 메인 HTML 파일
+
+## 🔄 Git 워크플로우
+
+### 이중 브랜치 관리 (중요!)
+```bash
+# 1. main 브랜치에서 개발
+git checkout main
+# 코드 수정
+git add .
+git commit -m "기능: 설명"
+git push origin main
+
+# 2. gh-pages 브랜치 동기화 (배포용)
+git checkout gh-pages
+git reset --hard main
+git push origin gh-pages --force
+```
+
+### 커밋 메시지 규칙
+- `기능: 새로운 기능 추가`
+- `수정: 버그 수정`
+- `개선: 기존 기능 개선`
+- `스타일: 코드 포맷팅`
+- `문서: 문서 업데이트`
+
+## 🎯 개발 규칙
+
+### 게임 로직
+- 60fps 기준으로 개발
+- 성능 최적화 필수 (불필요한 계산 방지)
+- 캔버스 렌더링 최적화
+- 메모리 누수 방지
+
+### 모듈 의존성
+- 순환 의존성 금지
+- import 순서: 외부 라이브러리 → 내부 모듈
+- 필요한 함수만 import (구체적 import 사용)
+
+### 에러 처리
+- localStorage 접근 시 try-catch 사용
+- 사용자 입력 검증
+- 게임 상태 검증
+
+## 📱 배포 규칙
+
+### GitHub Pages
+- `gh-pages` 브랜치 = 배포 브랜치
+- `public/` 폴더 내용이 실제 배포됨
+- main 브랜치 변경 후 반드시 gh-pages 동기화
+
+### 파일 동기화
+- `js/` → `public/js/` 자동 복사
+- `css/` → `public/css/` 자동 복사
+- `index.html` 루트와 public 모두 유지
+
+## 🧪 테스트 규칙
+
+### 기능 테스트
+- 새 기능 추가 시 브라우저에서 직접 테스트
+- 다양한 웨이브에서 테스트
+- 스킬 조합 테스트
+- 저장/로드 기능 테스트
+
+### 성능 테스트
+- 장시간 플레이 테스트
+- 메모리 사용량 모니터링
+- 프레임 드롭 확인
+
+## 🔧 도구 설정
+
+### VSCode/Cursor 설정
+- JavaScript 자동 완성 활성화
+- ESLint 규칙 적용
+- Prettier 포맷팅 (선택사항)
+
+### 브라우저 개발자 도구
+- Console 로그 활용한 디버깅
+- Performance 탭으로 성능 측정
+- Network 탭으로 리소스 로딩 확인
+
+## 📚 문서화
+
+### README.md
+- 게임 소개 및 조작법
+- 설치 및 실행 방법
+- 업데이트 내역
+
+### 코드 주석
+- 복잡한 수학 계산 설명
+- 게임 로직 흐름 설명
+- 스킬 시스템 동작 원리
+
+## ⚠️ 주의사항
+
+### 금지사항
+- 직접 DOM 조작 최소화 (Canvas 위주)
+- 전역 변수 사용 지양
+- 하드코딩된 값 지양 (상수화 필수)
+- 동기식 네트워크 요청 금지
+
+### 필수사항
+- 모든 변경사항을 main과 gh-pages 모두 적용
+- 성능에 영향을 주는 변경 시 테스트 필수
+- 사용자 데이터(점수, 스킬) 손실 방지
+- 브라우저 호환성 고려
+
+## 🎮 게임별 특수 규칙
+
+### 플레이어 시스템
+- 충돌 감지 최적화
+- 입력 반응성 최우선
+
+### 몬스터 시스템
+- 메모리 풀 패턴 사용 (몬스터 재활용)
+- AI 패턴 다양화
+
+### 스킬 시스템
+- 쿨타임 정확성 보장
+- 스킬 효과 시각적 피드백
+
+### 경제 시스템
+- 데이터 무결성 보장
+- 치트 방지 
