@@ -4,9 +4,9 @@
 
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
 
-// Supabase 설정 (환경변수 또는 설정값)
-const SUPABASE_URL = 'https://jbgdekdfdpyxvpcvidvo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZ2Rla2RmZHB5eHZwY3ZpZHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEwODA0OTAsImV4cCI6MjA2NjY1NjQ5MH0._nlqg1-Su7_nNk31BGZ62oBqBaRBnHb3DGuigUXQfyg';
+// Supabase 설정 (새로운 프로젝트 정보로 업데이트 필요!)
+const SUPABASE_URL = 'https://lcsqkovxzytarfosrxob.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxjc3Frb3Z4enl0YXJmb3NyeG9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Njk2ODEsImV4cCI6MjA2NzI0NTY4MX0.n0ouKA7dv04wwKsnlV_7WTyl4qV0M6LsIwQarCwkJzs';
 
 // Supabase 클라이언트 생성
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

@@ -6,13 +6,15 @@ import { isSkillUnlocked, getCoins } from './economy.js';
 import { canPerformGacha } from './shop.js';
 import { getSkillLevel, canUpgradeSkill, getUpgradeCost, UPGRADE_CONFIG } from './upgrade.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_TIERS, getPlayerStats, getUnlockedAchievements, getAchievementProgress } from './achievements.js';
+import { isLoggedIn, getCurrentUserInfo } from './auth.js';
 
 // ==================== UI 상태 정의 ====================
 export const UI_STATES = {
     GAME: 0,         // 메인 게임 화면
     SHOP: 1,         // 상점 화면
     UPGRADE: 2,      // 성장/업그레이드 화면
-    ACHIEVEMENTS: 3  // 도전과제 화면
+    ACHIEVEMENTS: 3, // 도전과제 화면
+    RANKING: 4       // 랭킹 화면
 };
 
 // ==================== UI 상태 관리 ====================
@@ -38,7 +40,8 @@ export function setUIState(newState) {
         [UI_STATES.GAME]: '게임',
         [UI_STATES.SHOP]: '상점',
         [UI_STATES.UPGRADE]: '성장',
-        [UI_STATES.ACHIEVEMENTS]: '도전과제'
+        [UI_STATES.ACHIEVEMENTS]: '도전과제',
+        [UI_STATES.RANKING]: '랭킹'
     };
     
     console.log(`UI 상태 변경: ${stateNames[oldState]} → ${stateNames[newState]}`);
@@ -73,6 +76,13 @@ export function switchToAchievements() {
 }
 
 /**
+ * 랭킹 화면으로 전환
+ */
+export function switchToRanking() {
+    setUIState(UI_STATES.RANKING);
+}
+
+/**
  * 탭 버튼 렌더링
  * @param {CanvasRenderingContext2D} ctx - 캔버스 컨텍스트
  * @param {number} canvasWidth - 캔버스 너비
@@ -85,10 +95,11 @@ export function renderTabButtons(ctx, canvasWidth) {
     
     // 탭 정보
     const tabs = [
-        { state: UI_STATES.GAME, label: '게임', x: canvasWidth - (tabWidth * 4 + spacing * 3) - 20 },
-        { state: UI_STATES.SHOP, label: '상점', x: canvasWidth - (tabWidth * 3 + spacing * 2) - 20 },
-        { state: UI_STATES.UPGRADE, label: '성장', x: canvasWidth - (tabWidth * 2 + spacing) - 20 },
-        { state: UI_STATES.ACHIEVEMENTS, label: '도전과제', x: canvasWidth - tabWidth - 20 }
+        { state: UI_STATES.GAME, label: '게임', x: canvasWidth - (tabWidth * 5 + spacing * 4) - 20 },
+        { state: UI_STATES.SHOP, label: '상점', x: canvasWidth - (tabWidth * 4 + spacing * 3) - 20 },
+        { state: UI_STATES.UPGRADE, label: '성장', x: canvasWidth - (tabWidth * 3 + spacing * 2) - 20 },
+        { state: UI_STATES.ACHIEVEMENTS, label: '도전과제', x: canvasWidth - (tabWidth * 2 + spacing) - 20 },
+        { state: UI_STATES.RANKING, label: '랭킹', x: canvasWidth - tabWidth - 20 }
     ];
     
     tabs.forEach(tab => {
@@ -470,6 +481,93 @@ function renderAchievementCard(ctx, achievement, x, y, width, height, isUnlocked
         ctx.fillStyle = '#CCCCCC';
         ctx.fillText('?', x + width/2, y + 58);
     }
+    
+    // 텍스트 정렬 리셋
+    ctx.textAlign = 'left';
+}
+
+/**
+ * 랭킹 화면 렌더링
+ * @param {CanvasRenderingContext2D} ctx - 캔버스 컨텍스트
+ * @param {number} canvasWidth - 캔버스 너비
+ * @param {number} canvasHeight - 캔버스 높이
+ */
+export function renderRankingScreen(ctx, canvasWidth, canvasHeight) {
+    // 배경
+    ctx.fillStyle = '#E8F4FD';
+    ctx.fillRect(0, 60, canvasWidth, canvasHeight - 60);
+    
+    // 제목
+    ctx.fillStyle = '#1565C0';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆 전체 랭킹', canvasWidth/2, 110);
+    
+    // 로그인 상태 확인
+    if (!isLoggedIn()) {
+        // 로그인 안내 메시지
+        ctx.fillStyle = '#FF9800';
+        ctx.font = '20px Arial';
+        ctx.fillText('🔐 로그인하여 랭킹에 참여하세요!', canvasWidth/2, 200);
+        
+        ctx.fillStyle = '#666666';
+        ctx.font = '16px Arial';
+        ctx.fillText('화면 하단의 Google 로그인 버튼을 클릭하세요', canvasWidth/2, 240);
+        
+        // 로그인 혜택 안내
+        ctx.fillStyle = '#4CAF50';
+        ctx.font = '18px Arial';
+        ctx.fillText('🎮 로그인 혜택:', canvasWidth/2, 300);
+        
+        ctx.fillStyle = '#333333';
+        ctx.font = '16px Arial';
+        const benefits = [
+            '• 실시간 전체 랭킹 확인',
+            '• 개인 최고 기록 저장',
+            '• 클라우드 데이터 동기화',
+            '• 다른 플레이어들과 경쟁'
+        ];
+        
+        benefits.forEach((benefit, index) => {
+            ctx.fillText(benefit, canvasWidth/2, 330 + index * 30);
+        });
+        
+    } else {
+        // 로그인된 상태 - 랭킹 정보 표시
+        const userInfo = getCurrentUserInfo();
+        
+        // 현재 사용자 정보
+        ctx.fillStyle = '#4CAF50';
+        ctx.font = '18px Arial';
+        ctx.fillText(`👤 ${userInfo.name}님, 환영합니다!`, canvasWidth/2, 150);
+        
+        // 랭킹 데이터 로딩 상태
+        ctx.fillStyle = '#666666';
+        ctx.font = '16px Arial';
+        ctx.fillText('🔄 랭킹 데이터를 불러오는 중...', canvasWidth/2, 200);
+        
+        // 개인 최고 기록 표시
+        ctx.fillStyle = '#FF9800';
+        ctx.font = '20px Arial';
+        ctx.fillText('📊 개인 최고 기록', canvasWidth/2, 250);
+        
+        // 실제 랭킹 데이터는 ranking.js에서 관리
+        ctx.fillStyle = '#333333';
+        ctx.font = '16px Arial';
+        ctx.fillText('최고 웨이브: 조회 중...', canvasWidth/2, 280);
+        ctx.fillText('전체 순위: 조회 중...', canvasWidth/2, 310);
+        
+        // 새로고침 안내
+        ctx.fillStyle = '#666666';
+        ctx.font = '14px Arial';
+        ctx.fillText('📱 실시간 랭킹은 자동으로 업데이트됩니다', canvasWidth/2, 400);
+    }
+    
+    // 하단 안내
+    ctx.fillStyle = '#666666';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('1/2/3/4/5 키로 탭 전환', canvasWidth/2, canvasHeight - 10);
     
     // 텍스트 정렬 리셋
     ctx.textAlign = 'left';

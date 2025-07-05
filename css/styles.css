@@ -454,4 +454,107 @@ canvas {
         align-items: flex-start;
         gap: 4px;
     }
+}
+
+/* ==================== 하단 고정 인증 UI 스타일 ==================== */
+.auth-container-bottom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(66, 133, 244, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 8px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.auth-container-bottom:hover {
+    background: rgba(66, 133, 244, 1);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.auth-section-bottom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.login-section-bottom {
+    display: flex;
+    align-items: center;
+}
+
+.google-login-btn-bottom {
+    background: transparent;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.google-login-btn-bottom:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.google-login-btn-bottom:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.user-info-section-bottom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-info-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.user-info-bottom #user-name {
+    color: white;
+    font-weight: bold;
+}
+
+.sync-btn-bottom, .logout-btn-bottom {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sync-btn-bottom:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.logout-btn-bottom:hover {
+    background: rgba(220, 53, 69, 0.8);
+    border-color: rgba(220, 53, 69, 0.8);
+}
+
+.sync-status-bottom {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 2px;
 } 

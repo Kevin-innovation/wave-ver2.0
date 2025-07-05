@@ -35,38 +35,31 @@ export function initAuthUI() {
  * 인증 관련 DOM 요소들 생성
  */
 function createAuthElements() {
-    // 인증 컨테이너 생성
+    // 인증 컨테이너 생성 (화면 하단 고정)
     authContainer = document.createElement('div');
     authContainer.id = 'auth-container';
-    authContainer.className = 'auth-container';
+    authContainer.className = 'auth-container-bottom';
     authContainer.innerHTML = `
-        <div class="auth-section">
-            <h3>🔐 계정 연동</h3>
-            <div id="login-section" class="login-section">
-                <button id="google-login-btn" class="google-login-btn">
-                    <span class="google-icon">📧</span>
-                    Google로 로그인하여 랭킹 참여하기
+        <div class="auth-section-bottom">
+            <div id="login-section" class="login-section-bottom">
+                <button id="google-login-btn" class="google-login-btn-bottom">
+                    <span class="google-icon">🔐</span>
+                    Google 로그인하여 랭킹 참여하기
                 </button>
-                <p class="auth-info">
-                    로그인하면 클라우드 저장과 전체 랭킹에 참여할 수 있습니다!
-                </p>
             </div>
             
-            <div id="user-info-section" class="user-info-section" style="display: none;">
-                <div class="user-info">
+            <div id="user-info-section" class="user-info-section-bottom" style="display: none;">
+                <div class="user-info-bottom">
                     <span id="user-name">사용자명</span>
-                    <span id="user-email">email@example.com</span>
-                </div>
-                <div class="user-actions">
-                    <button id="sync-data-btn" class="sync-btn">
-                        🔄 클라우드와 동기화
+                    <button id="sync-data-btn" class="sync-btn-bottom">
+                        🔄 동기화
                     </button>
-                    <button id="logout-btn" class="logout-btn">
+                    <button id="logout-btn" class="logout-btn-bottom">
                         🚪 로그아웃
                     </button>
                 </div>
-                <div class="sync-status" id="sync-status">
-                    💾 로컬 저장 중...
+                <div class="sync-status-bottom" id="sync-status">
+                    💾 로컬 저장됨
                 </div>
             </div>
         </div>
