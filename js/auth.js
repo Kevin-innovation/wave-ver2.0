@@ -203,6 +203,38 @@ async function checkInitialAuthState() {
     console.log('📍 Pathname:', window.location.pathname);
     console.log('🔐 Hash:', window.location.hash);
     
+    // URL 파라미터에서 OAuth 에러 확인 (Supabase 데이터베이스 에러 등)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlError = urlParams.get('error');
+    const urlErrorCode = urlParams.get('error_code');
+    const urlErrorDescription = urlParams.get('error_description');
+    
+    if (urlError) {
+        console.error('❌ URL 파라미터 OAuth 에러:', { urlError, urlErrorCode, urlErrorDescription });
+        
+        let userMessage = '로그인 중 오류가 발생했습니다.';
+        
+        if (urlErrorDescription) {
+            const decodedDescription = decodeURIComponent(urlErrorDescription.replace(/\+/g, ' '));
+            
+            if (decodedDescription.includes('Database error saving new user')) {
+                userMessage = '새 사용자 등록 중 데이터베이스 오류가 발생했습니다.\n잠시 후 다시 시도해 주세요.';
+                console.error('🗄️ Supabase 데이터베이스 에러: 새 사용자 저장 실패');
+            } else if (decodedDescription.includes('permission')) {
+                userMessage = '데이터베이스 권한 오류가 발생했습니다.\n관리자에게 문의해 주세요.';
+            }
+            
+            console.error('📝 상세 에러 설명:', decodedDescription);
+        }
+        
+        alert(userMessage);
+        
+        // URL에서 에러 파라미터 제거
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        return;
+    }
+    
     // URL 해시 확인 (OAuth 콜백 처리)
     const urlHash = window.location.hash;
     if (urlHash && urlHash.includes('access_token')) {
