@@ -255,7 +255,7 @@ export async function loadGameDataFromSupabase() {
 }
 
 /**
- * 랭킹 데이터 추가
+ * 랭킹 데이터 추가 (기존 기록보다 높은 점수만 저장)
  * @param {number} score - 달성한 웨이브 점수
  */
 export async function addScoreToRanking(score) {
@@ -265,6 +265,47 @@ export async function addScoreToRanking(score) {
     }
     
     try {
+        // 1. 기존 최고 기록 확인
+        const { data: existingRecord, error: checkError } = await supabase
+            .from('rankings')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('score', { ascending: false })
+            .limit(1);
+            
+        if (checkError) {
+            console.error('❌ 기존 기록 확인 실패:', checkError);
+            return { success: false, error: checkError.message };
+        }
+        
+        // 2. 기존 기록이 있는 경우
+        if (existingRecord && existingRecord.length > 0) {
+            const currentBest = existingRecord[0];
+            
+            if (score <= currentBest.score) {
+                console.log(`ℹ️ 기존 최고 기록(${currentBest.score}웨이브)보다 낮아 랭킹에 등록하지 않습니다.`);
+                return { success: false, error: 'Score not high enough' };
+            }
+            
+            // 기존 기록 업데이트
+            const { data: updateData, error: updateError } = await supabase
+                .from('rankings')
+                .update({
+                    score: score,
+                    achieved_at: new Date().toISOString()
+                })
+                .eq('id', currentBest.id);
+                
+            if (updateError) {
+                console.error('❌ 랭킹 업데이트 실패:', updateError);
+                return { success: false, error: updateError.message };
+            }
+            
+            console.log(`✅ 랭킹 업데이트 성공: ${currentBest.score}웨이브 → ${score}웨이브`);
+            return { success: true, data: updateData, updated: true };
+        }
+        
+        // 3. 첫 번째 기록인 경우 새로 추가
         const { data, error } = await supabase
             .from('rankings')
             .insert({
@@ -280,8 +321,8 @@ export async function addScoreToRanking(score) {
             return { success: false, error: error.message };
         }
         
-        console.log('✅ 랭킹 등록 성공:', score, '웨이브');
-        return { success: true, data };
+        console.log('✅ 첫 랭킹 등록 성공:', score, '웨이브');
+        return { success: true, data, inserted: true };
         
     } catch (error) {
         console.error('❌ 랭킹 등록 오류:', error);
@@ -290,25 +331,51 @@ export async function addScoreToRanking(score) {
 }
 
 /**
- * 랭킹 보드 데이터 가져오기
+ * 랭킹 보드 데이터 가져오기 (사용자별 최고점만)
  * @param {number} limit - 가져올 순위 수 (기본값: 100)
  */
 export async function getRankings(limit = 100) {
     try {
+        // 모든 랭킹 데이터를 가져온 후 클라이언트에서 중복 제거
         const { data, error } = await supabase
             .from('rankings')
             .select('*')
             .order('score', { ascending: false })
-            .order('achieved_at', { ascending: true }) // 같은 점수면 먼저 달성한 사람이 위
-            .limit(limit);
+            .order('achieved_at', { ascending: true }); // 같은 점수면 먼저 달성한 사람이 위
             
         if (error) {
             console.error('❌ 랭킹 조회 실패:', error);
             return [];
         }
         
-        console.log('✅ 랭킹 조회 성공:', data.length, '개 기록');
-        return data;
+        // 사용자별 최고점만 추출
+        const userBestScores = new Map();
+        
+        data.forEach(record => {
+            const userId = record.user_id;
+            const existingRecord = userBestScores.get(userId);
+            
+            if (!existingRecord || record.score > existingRecord.score) {
+                userBestScores.set(userId, record);
+            } else if (record.score === existingRecord.score && 
+                       new Date(record.achieved_at) < new Date(existingRecord.achieved_at)) {
+                // 같은 점수면 먼저 달성한 기록 선택
+                userBestScores.set(userId, record);
+            }
+        });
+        
+        // Map을 배열로 변환하고 점수순으로 정렬
+        const uniqueRankings = Array.from(userBestScores.values())
+            .sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score; // 점수 내림차순
+                }
+                return new Date(a.achieved_at) - new Date(b.achieved_at); // 같은 점수면 먼저 달성한 순
+            })
+            .slice(0, limit); // 상위 limit개만 선택
+        
+        console.log(`✅ 랭킹 조회 성공: ${data.length}개 기록 → ${uniqueRankings.length}개 고유 사용자`);
+        return uniqueRankings;
         
     } catch (error) {
         console.error('❌ 랭킹 조회 오류:', error);
@@ -346,5 +413,81 @@ export async function getPersonalBestRanking() {
     } catch (error) {
         console.error('❌ 개인 최고 기록 조회 오류:', error);
         return null;
+    }
+}
+
+/**
+ * 기존 중복 랭킹 데이터 정리 (개발자용 유틸리티)
+ * 각 사용자의 최고 점수만 남기고 나머지 삭제
+ */
+export async function cleanupDuplicateRankings() {
+    if (!currentUser) {
+        console.log('ℹ️ 관리자 권한이 필요합니다.');
+        return { success: false, error: 'Admin access required' };
+    }
+    
+    try {
+        console.log('🧹 중복 랭킹 데이터 정리 시작...');
+        
+        // 모든 랭킹 데이터 가져오기
+        const { data: allRankings, error } = await supabase
+            .from('rankings')
+            .select('*')
+            .order('score', { ascending: false });
+            
+        if (error) {
+            console.error('❌ 랭킹 데이터 조회 실패:', error);
+            return { success: false, error: error.message };
+        }
+        
+        // 사용자별 최고 기록만 추출
+        const userBestRecords = new Map();
+        const recordsToDelete = [];
+        
+        allRankings.forEach(record => {
+            const userId = record.user_id;
+            const existing = userBestRecords.get(userId);
+            
+            if (!existing) {
+                userBestRecords.set(userId, record);
+            } else {
+                // 더 높은 점수가 있으면 기존 것을 삭제 목록에 추가
+                if (record.score > existing.score) {
+                    recordsToDelete.push(existing.id);
+                    userBestRecords.set(userId, record);
+                } else {
+                    // 현재 기록이 더 낮으면 삭제 목록에 추가
+                    recordsToDelete.push(record.id);
+                }
+            }
+        });
+        
+        // 중복 기록 삭제
+        if (recordsToDelete.length > 0) {
+            const { error: deleteError } = await supabase
+                .from('rankings')
+                .delete()
+                .in('id', recordsToDelete);
+                
+            if (deleteError) {
+                console.error('❌ 중복 기록 삭제 실패:', deleteError);
+                return { success: false, error: deleteError.message };
+            }
+            
+            console.log(`✅ 중복 랭킹 정리 완료: ${recordsToDelete.length}개 중복 기록 삭제`);
+            console.log(`📊 정리 결과: ${allRankings.length}개 → ${userBestRecords.size}개 고유 사용자`);
+        } else {
+            console.log('ℹ️ 중복 기록이 없습니다.');
+        }
+        
+        return { 
+            success: true, 
+            deleted: recordsToDelete.length,
+            remaining: userBestRecords.size 
+        };
+        
+    } catch (error) {
+        console.error('❌ 중복 랭킹 정리 오류:', error);
+        return { success: false, error: error.message };
     }
 } 
