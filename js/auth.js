@@ -9,7 +9,8 @@ import {
     onAuthStateChange,
     currentUser,
     saveGameDataToSupabase,
-    loadGameDataFromSupabase
+    loadGameDataFromSupabase,
+    supabase
 } from './supabase.js';
 import { gameData, saveGameData, loadGameData } from './economy.js';
 
@@ -202,28 +203,54 @@ async function checkInitialAuthState() {
     if (urlHash && urlHash.includes('access_token')) {
         console.log('🔑 OAuth 콜백 감지:', urlHash);
         
-        // 페이지 새로고침 방지를 위해 해시 제거
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // 약간의 지연 후 사용자 상태 확인
-        setTimeout(async () => {
-            const user = await getCurrentUser();
-            if (user) {
-                console.log('✅ OAuth 콜백 처리 성공');
-                updateAuthUI(true, user);
+        try {
+            // URL 해시에서 토큰 정보 추출
+            const hashParams = new URLSearchParams(urlHash.slice(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            const expiresIn = hashParams.get('expires_in');
+            
+            console.log('📝 토큰 정보:', { accessToken: accessToken?.slice(0, 20) + '...', refreshToken: refreshToken?.slice(0, 20) + '...', expiresIn });
+            
+            if (accessToken && refreshToken) {
+                // Supabase 세션 수동 설정
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
                 
-                // 클라우드 데이터 로드 및 병합
-                try {
-                    const cloudData = await loadGameDataFromSupabase();
-                    if (cloudData) {
-                        await mergeGameData(cloudData);
+                if (error) {
+                    console.error('❌ 세션 설정 실패:', error);
+                } else {
+                    console.log('✅ 세션 설정 성공:', data);
+                    
+                    // 페이지 새로고침 방지를 위해 해시 제거
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // UI 업데이트 및 데이터 병합
+                    if (data.user) {
+                        updateAuthUI(true, data.user);
+                        
+                        // 클라우드 데이터 로드 및 병합
+                        try {
+                            const cloudData = await loadGameDataFromSupabase();
+                            if (cloudData) {
+                                await mergeGameData(cloudData);
+                            }
+                        } catch (error) {
+                            console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
+                        }
                     }
-                } catch (error) {
-                    console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
+                    
+                    return;
                 }
             }
-        }, 1000);
+        } catch (error) {
+            console.error('❌ OAuth 콜백 처리 오류:', error);
+        }
         
+        // 페이지 새로고침 방지를 위해 해시 제거
+        window.history.replaceState({}, document.title, window.location.pathname);
         return;
     }
     
