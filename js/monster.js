@@ -1,22 +1,43 @@
 /**
- * 몬스터 시스템
+ * 몬스터 시스템 - 다양한 타입과 웨이브별 등장 시스템
  */
 
 import { player } from './player.js';
 import { earnCoins } from './economy.js';
 
+// ==================== 몬스터 타입 정의 ====================
+export const MONSTER_TYPES = {
+    NORMAL: 'normal',       // 기본 몬스터 (빨간색)
+    SPEED: 'speed'          // 빠른 몬스터 (주황색)
+};
+
+// ==================== 몬스터 타입별 설정 ====================
+export const MONSTER_CONFIG = {
+    [MONSTER_TYPES.NORMAL]: {
+        speedMultiplier: 1.0,
+        color: '#FF0000',        // 빨간색
+        unlockWave: 1            // 웨이브 1부터 등장
+    },
+    [MONSTER_TYPES.SPEED]: {
+        speedMultiplier: 1.3,    // 30% 빠름
+        color: '#FF8800',        // 주황색
+        unlockWave: 10           // 웨이브 10부터 등장
+    }
+};
+
 // ==================== 몬스터 배열 (최대 30개) ====================
 export const monsters = [];
 for (let i = 0; i < 30; i++) {
     monsters.push({
-        active: false,   // 활성화 여부
-        x: 0,           // x 좌표
-        y: 0,           // y 좌표
-        dx: 0,          // x 방향 속도
-        dy: 0,          // y 방향 속도
-        width: 30,      // 너비
-        height: 30,     // 높이
-        color: '#FF0000' // 빨간색
+        active: false,              // 활성화 여부
+        type: MONSTER_TYPES.NORMAL, // 몬스터 타입
+        x: 0,                       // x 좌표
+        y: 0,                       // y 좌표
+        dx: 0,                      // x 방향 속도
+        dy: 0,                      // y 방향 속도
+        width: 30,                  // 너비
+        height: 30,                 // 높이
+        color: '#FF0000'            // 색상 (타입에 따라 변경됨)
     });
 }
 
@@ -28,12 +49,14 @@ for (let i = 0; i < 30; i++) {
  * 2. 선택된 가장자리에서 랜덤 위치에 몬스터 생성
  * 3. 현재 플레이어 위치를 향한 이동 방향과 속도 계산
  * 4. 웨이브에 따라 속도 증가 (기본 3.2 + 웨이브당 0.3씩)
+ * 5. 타입별 속도 배율 적용
  * 
  * @param {number} currentWave - 현재 웨이브
  * @param {Object} skills - 스킬 상태
+ * @param {string} monsterType - 몬스터 타입 (MONSTER_TYPES)
  * @returns {Object} 몬스터 객체
  */
-export function createMonster(currentWave, skills) {
+export function createMonster(currentWave, skills, monsterType = MONSTER_TYPES.NORMAL) {
     // 화면 가장자리 중 하나를 랜덤 선택 (0:위, 1:오른쪽, 2:아래, 3:왼쪽)
     const side = Math.floor(Math.random() * 4);
     let x, y;
@@ -59,8 +82,12 @@ export function createMonster(currentWave, skills) {
     // 피타고라스 정리로 거리 계산 (√(dx² + dy²))
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // 웨이브에 따른 속도 계산: Wave 5 수준(3.2)부터 시작하여 웨이브당 0.3씩 증가
+    // 웨이브에 따른 기본 속도 계산: Wave 5 수준(3.2)부터 시작하여 웨이브당 0.3씩 증가
     let speed = 3.2 + (currentWave - 1) * 0.3;
+    
+    // 타입별 속도 배율 적용
+    const config = MONSTER_CONFIG[monsterType];
+    speed *= config.speedMultiplier;
     
     // 슬로우 스킬 적용
     if (skills.slow.active) {
@@ -77,13 +104,14 @@ export function createMonster(currentWave, skills) {
     // 몬스터 정보 반환
     return {
         active: true,
+        type: monsterType,
         x: x,
         y: y,
         dx: finalDx,
         dy: finalDy,
         width: 30,
         height: 30,
-        color: '#FF0000'
+        color: config.color
     };
 }
 
@@ -93,6 +121,7 @@ export function createMonster(currentWave, skills) {
 export function resetMonsters() {
     for (let i = 0; i < monsters.length; i++) {
         monsters[i].active = false;
+        monsters[i].type = MONSTER_TYPES.NORMAL;
         monsters[i].dx = 0;
         monsters[i].dy = 0;
     }
@@ -154,16 +183,57 @@ export function updateMonsters(skills) {
 export function spawnWaveMonsters(monstersPerWave, currentWave, skills) {
     let monstersSpawned = 0;
 
+    // 웨이브별 몬스터 타입 구성 계산
+    const monsterTypeDistribution = calculateMonsterDistribution(monstersPerWave, currentWave);
+    
     // 몬스터 배열을 순회하며 빈 슬롯에 몬스터 생성
     for (let i = 0; i < monsters.length && monstersSpawned < monstersPerWave; i++) {
         if (!monsters[i].active) {
-            const newMonster = createMonster(currentWave, skills);
+            // 생성할 몬스터 타입 결정
+            const monsterType = getMonsterTypeForSpawn(monstersSpawned, monsterTypeDistribution);
+            const newMonster = createMonster(currentWave, skills, monsterType);
             monsters[i] = newMonster;
             monstersSpawned++;
         }
     }
     
     return monstersSpawned;
+}
+
+/**
+ * 웨이브별 몬스터 타입 분배 계산
+ * @param {number} totalMonsters - 총 몬스터 수
+ * @param {number} currentWave - 현재 웨이브
+ * @returns {Object} - 타입별 몬스터 수 분배
+ */
+function calculateMonsterDistribution(totalMonsters, currentWave) {
+    const distribution = {
+        [MONSTER_TYPES.NORMAL]: totalMonsters,
+        [MONSTER_TYPES.SPEED]: 0
+    };
+    
+    // 웨이브 10부터 주황색 몬스터 등장
+    if (currentWave >= 10) {
+        const speedMonsters = Math.min(currentWave - 9, totalMonsters);
+        distribution[MONSTER_TYPES.SPEED] = speedMonsters;
+        distribution[MONSTER_TYPES.NORMAL] = totalMonsters - speedMonsters;
+    }
+    
+    return distribution;
+}
+
+/**
+ * 몬스터 생성 순서에 따른 타입 결정
+ * @param {number} spawnIndex - 생성 순서 (0부터 시작)
+ * @param {Object} distribution - 타입별 몬스터 수 분배
+ * @returns {string} - 몬스터 타입
+ */
+function getMonsterTypeForSpawn(spawnIndex, distribution) {
+    // 빠른 몬스터를 먼저 생성
+    if (spawnIndex < distribution[MONSTER_TYPES.SPEED]) {
+        return MONSTER_TYPES.SPEED;
+    }
+    return MONSTER_TYPES.NORMAL;
 }
 
 /**
