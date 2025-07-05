@@ -32,6 +32,14 @@ import {
     loadUpgradeData,
     upgradeData
 } from './upgrade.js';
+import {
+    getUnlockedGuides,
+    refreshGuidesFromCloud
+} from './shop.js';
+import {
+    saveGuidesToSupabase,
+    loadGuidesFromSupabase
+} from './supabase.js';
 
 // UI 요소들
 let authContainer = null;
@@ -193,8 +201,17 @@ async function handleSyncData() {
         // 2. 도전과제 데이터 저장
         await savePlayerStats();
         
+        // 3. 해금된 가이드 데이터 저장
+        const unlockedGuides = getUnlockedGuides();
+        const guideIds = unlockedGuides.map(guide => guide.id);
+        const saveGuidesResult = await saveGuidesToSupabase(guideIds);
+        
+        if (!saveGuidesResult.success) {
+            console.warn('⚠️ 가이드 데이터 저장 실패:', saveGuidesResult.error);
+        }
+        
         statusDiv.textContent = '✅ 모든 데이터 동기화 완료!';
-        console.log('✅ 전체 데이터 동기화 성공');
+        console.log('✅ 전체 데이터 동기화 성공 (게임 + 도전과제 + 가이드)');
         
         // 3초 후 상태 원복
         setTimeout(() => {
@@ -368,6 +385,9 @@ async function handleUserLogin(user) {
             // 업그레이드 데이터와 통계 데이터도 다시 로드
             loadUpgradeData();
             await loadPlayerStats();
+            
+            // 해금된 가이드 데이터도 클라우드에서 새로고침
+            await refreshGuidesFromCloud();
             
         } else {
             // 새 사용자 - 초기 데이터로 시작

@@ -385,6 +385,10 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
         return tierOrder[a.tier] - tierOrder[b.tier];
     });
     
+    // 업적 영역 계산 (렌더링 전에 계산)
+    const totalRows = Math.ceil(sortedAchievements.length / itemsPerRow);
+    const achievementAreaBottom = startY + totalRows * (achievementHeight + rowSpacing) - rowSpacing;
+    
     // 업적 렌더링 (3열 그리드 레이아웃)
     sortedAchievements.forEach((achievement, index) => {
         const row = Math.floor(index / itemsPerRow);
@@ -404,58 +408,61 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
         renderAchievementCard(ctx, achievement, x, y, achievementWidth, achievementHeight, isUnlocked);
     });
     
-    // 해금된 가이드 표시
+    // 해금된 가이드 표시 (업적 영역 아래에 배치)
     const unlockedGuides = getUnlockedGuides();
+    const guideStartY = Math.max(achievementAreaBottom + 30, canvasHeight - 200); // 업적 아래 30px 간격, 최소 200px 확보
     
     if (unlockedGuides.length > 0) {
         ctx.fillStyle = '#8B4513';
         ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(`🔮 해금된 비밀 (${unlockedGuides.length}/25)`, canvasWidth/2, canvasHeight - 160);
+        ctx.fillText(`🔮 해금된 비밀 (${unlockedGuides.length}/25)`, canvasWidth/2, guideStartY);
         
-        // 해금된 가이드 목록 표시 (최대 3개)
-        const displayGuides = unlockedGuides.slice(-3); // 최근 3개만 표시
+        // 해금된 가이드 목록 표시 (최대 2개로 축소하여 공간 절약)
+        const displayGuides = unlockedGuides.slice(-2); // 최근 2개만 표시
         
+        let currentY = guideStartY + 25;
         displayGuides.forEach((guide, index) => {
             ctx.fillStyle = '#9C27B0';
             ctx.font = 'bold 14px Arial';
-            ctx.fillText(guide.title, canvasWidth/2, canvasHeight - 135 + index * 25);
+            ctx.fillText(guide.title, canvasWidth/2, currentY);
+            currentY += 20;
             
-            // 가이드 텍스트를 줄바꿈하여 표시
+            // 가이드 텍스트를 줄바꿈하여 표시 (더 간결하게)
             ctx.fillStyle = '#654321';
             ctx.font = '12px Arial';
             const maxWidth = canvasWidth - 100;
             const words = guide.guide.split(' ');
             let line = '';
-            let yPos = canvasHeight - 120 + index * 25;
             
             for (let i = 0; i < words.length; i++) {
                 const testLine = line + words[i] + ' ';
                 const metrics = ctx.measureText(testLine);
                 
                 if (metrics.width > maxWidth && i > 0) {
-                    ctx.fillText(line, canvasWidth/2, yPos);
+                    ctx.fillText(line, canvasWidth/2, currentY);
                     line = words[i] + ' ';
-                    yPos += 12;
+                    currentY += 14;
                 } else {
                     line = testLine;
                 }
             }
-            ctx.fillText(line, canvasWidth/2, yPos);
+            ctx.fillText(line, canvasWidth/2, currentY);
+            currentY += 20; // 가이드 간 간격
         });
         
         // 추가 가이드 안내
         if (unlockedGuides.length < 25) {
             ctx.fillStyle = '#654321';
             ctx.font = '12px Arial';
-            ctx.fillText('🎰 상점에서 더 많은 비밀을 발견하세요!', canvasWidth/2, canvasHeight - 45);
+            ctx.fillText('🎰 상점에서 더 많은 비밀을 발견하세요!', canvasWidth/2, Math.min(currentY + 15, canvasHeight - 30));
         }
     } else {
         // 업적 탐험 안내 (가이드가 없을 때)
         ctx.fillStyle = '#8B4513';
         ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🔍 업적 탐험하기', canvasWidth/2, canvasHeight - 80);
+        ctx.fillText('🔍 업적 탐험하기', canvasWidth/2, guideStartY);
         
         // 업적 해금 방법 획득 안내
         ctx.fillStyle = '#654321';
@@ -467,7 +474,7 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
         ];
         
         explorationTips.forEach((tip, index) => {
-            ctx.fillText(tip, canvasWidth/2, canvasHeight - 55 + index * 18);
+            ctx.fillText(tip, canvasWidth/2, guideStartY + 25 + index * 18);
         });
     }
     

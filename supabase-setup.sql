@@ -75,6 +75,14 @@ CREATE TABLE IF NOT EXISTS player_achievements (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS unlocked_guides (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    unlocked_guide_ids TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 5. 중복 데이터 정리
 DO $$
 DECLARE
@@ -152,6 +160,7 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_saves ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rankings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE player_achievements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unlocked_guides ENABLE ROW LEVEL SECURITY;
 
 -- 8. RLS 정책 생성
 CREATE POLICY "Anyone can read profiles" ON user_profiles FOR SELECT USING (true);
@@ -164,6 +173,8 @@ CREATE POLICY "Anyone can read rankings" ON rankings FOR SELECT USING (true);
 CREATE POLICY "Users can manage own rankings" ON rankings FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can manage own achievements" ON player_achievements FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own guides" ON unlocked_guides FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- 9. 새 사용자 처리 함수
 CREATE OR REPLACE FUNCTION handle_new_user()
@@ -200,6 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_game_saves_user_id ON game_saves(user_id);
 CREATE INDEX IF NOT EXISTS idx_rankings_user_id ON rankings(user_id);
 CREATE INDEX IF NOT EXISTS idx_rankings_score_desc ON rankings(score DESC);
 CREATE INDEX IF NOT EXISTS idx_player_achievements_user_id ON player_achievements(user_id);
+CREATE INDEX IF NOT EXISTS idx_unlocked_guides_user_id ON unlocked_guides(user_id);
 
 -- 12. 뷰 생성
 CREATE OR REPLACE VIEW top_rankings AS

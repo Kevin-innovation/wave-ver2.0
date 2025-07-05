@@ -591,4 +591,74 @@ export async function loadAchievementsFromSupabase() {
         console.error('❌ 도전과제 데이터 불러오기 오류:', error);
         return null;
     }
+}
+
+/**
+ * 해금된 가이드 데이터 클라우드 저장
+ * @param {Array} unlockedGuideIds - 해금된 가이드 ID 배열
+ */
+export async function saveGuidesToSupabase(unlockedGuideIds) {
+    if (!currentUser) {
+        console.log('ℹ️ 로그인하지 않아 로컬에만 저장됩니다.');
+        return { success: false, error: 'Not authenticated' };
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('unlocked_guides')
+            .upsert({
+                user_id: currentUser.id,
+                unlocked_guide_ids: unlockedGuideIds,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id',
+                returning: 'minimal'
+            });
+            
+        if (error) {
+            console.error('❌ 해금된 가이드 데이터 저장 실패:', error);
+            return { success: false, error: error.message };
+        }
+        
+        console.log('✅ 해금된 가이드 데이터 클라우드 저장 성공');
+        return { success: true, data };
+        
+    } catch (error) {
+        console.error('❌ 해금된 가이드 데이터 저장 오류:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * 해금된 가이드 데이터 클라우드에서 불러오기
+ */
+export async function loadGuidesFromSupabase() {
+    if (!currentUser) {
+        console.log('ℹ️ 로그인하지 않아 로컬 데이터를 사용합니다.');
+        return null;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('unlocked_guides')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
+            
+        if (error) {
+            if (error.code === 'PGRST116') {
+                console.log('ℹ️ 클라우드에 저장된 가이드 데이터가 없습니다.');
+                return [];
+            }
+            console.error('❌ 해금된 가이드 데이터 불러오기 실패:', error);
+            return null;
+        }
+        
+        console.log('✅ 해금된 가이드 데이터 클라우드에서 불러오기 성공');
+        return data.unlocked_guide_ids || [];
+        
+    } catch (error) {
+        console.error('❌ 해금된 가이드 데이터 불러오기 오류:', error);
+        return null;
+    }
 } 

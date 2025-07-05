@@ -67,7 +67,7 @@ export async function initGame() {
     await initAchievementSystem();
     
     // 상점 시스템 초기화
-    initShopSystem();
+    await initShopSystem();
     
     // 키보드 이벤트 리스너 설정
     setupInputListeners(gameState, canvas);

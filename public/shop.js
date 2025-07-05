@@ -5,6 +5,7 @@
 import { getCoins, spendCoins, isSkillUnlocked, unlockSkill } from './economy.js';
 import { recordGachaPull } from './achievements.js';
 import { getCurrentUserInfo } from './auth.js';
+import { saveGuidesToSupabase, loadGuidesFromSupabase } from './supabase.js';
 
 // ==================== 상점 설정 ====================
 export const SHOP_CONFIG = {
@@ -182,16 +183,32 @@ function getUserStorageKey(baseKey) {
 }
 
 /**
- * 해금된 가이드 로드
+ * 해금된 가이드 로드 (클라우드 우선)
  */
-function loadUnlockedGuides() {
+async function loadUnlockedGuides() {
     try {
+        // 로그인한 경우 클라우드에서 먼저 시도
+        const user = getCurrentUserInfo();
+        if (user && user.id) {
+            const cloudGuides = await loadGuidesFromSupabase();
+            if (cloudGuides !== null) {
+                unlockedGuides = new Set(cloudGuides);
+                console.log('해금된 가이드 클라우드 로드 완료:', unlockedGuides);
+                
+                // 로컬에도 백업 저장
+                const storageKey = getUserStorageKey('wave-ver2-guides');
+                localStorage.setItem(storageKey, JSON.stringify([...unlockedGuides]));
+                return;
+            }
+        }
+        
+        // 클라우드 로드 실패 시 로컬에서 로드
         const storageKey = getUserStorageKey('wave-ver2-guides');
         const saved = localStorage.getItem(storageKey);
         if (saved) {
             const parsedData = JSON.parse(saved);
             unlockedGuides = new Set(parsedData);
-            console.log('해금된 가이드 로드 완료:', unlockedGuides);
+            console.log('해금된 가이드 로컬 로드 완료:', unlockedGuides);
         }
     } catch (error) {
         console.error('해금된 가이드 로드 실패:', error);
@@ -200,13 +217,24 @@ function loadUnlockedGuides() {
 }
 
 /**
- * 해금된 가이드 저장
+ * 해금된 가이드 저장 (클라우드 + 로컬)
  */
-function saveUnlockedGuides() {
+async function saveUnlockedGuides() {
     try {
+        const guideArray = [...unlockedGuides];
+        
+        // 로컬 저장 (즉시)
         const storageKey = getUserStorageKey('wave-ver2-guides');
-        localStorage.setItem(storageKey, JSON.stringify([...unlockedGuides]));
-        console.log('해금된 가이드 저장 완료');
+        localStorage.setItem(storageKey, JSON.stringify(guideArray));
+        console.log('해금된 가이드 로컬 저장 완료');
+        
+        // 클라우드 저장 (비동기, 백그라운드)
+        const user = getCurrentUserInfo();
+        if (user && user.id) {
+            saveGuidesToSupabase(guideArray).catch(error => {
+                console.error('클라우드 가이드 저장 실패:', error);
+            });
+        }
     } catch (error) {
         console.error('해금된 가이드 저장 실패:', error);
     }
@@ -215,8 +243,8 @@ function saveUnlockedGuides() {
 /**
  * 초기화 함수 (게임 시작 시 호출)
  */
-export function initShopSystem() {
-    loadUnlockedGuides();
+export async function initShopSystem() {
+    await loadUnlockedGuides();
 }
 
 /**
@@ -291,7 +319,7 @@ export function performGuideGacha() {
     
     // 가이드 해금
     unlockedGuides.add(selectedGuideId);
-    saveUnlockedGuides();
+    saveUnlockedGuides(); // 비동기 처리 (백그라운드)
     
     // 도전과제 통계 기록 (뽑기 횟수)
     recordGachaPull(); // 비동기 처리 (백그라운드)
@@ -324,6 +352,13 @@ function startGuideGachaAnimation(guide) {
  */
 export function getUnlockedGuides() {
     return [...unlockedGuides].map(id => ACHIEVEMENT_GUIDES[id]).filter(guide => guide);
+}
+
+/**
+ * 가이드 데이터 새로고침 (로그인 후 호출)
+ */
+export async function refreshGuidesFromCloud() {
+    await loadUnlockedGuides();
 }
 
 /**
