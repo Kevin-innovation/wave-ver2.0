@@ -5,6 +5,8 @@
  * - 등급별 액자 디자인으로 수집 재미 제공
  */
 
+import { isLoggedIn, getCurrentUserInfo } from './auth.js';
+
 // ==================== 업적 등급 정의 ====================
 export const ACHIEVEMENT_TIERS = {
     BRONZE: 'bronze',
@@ -15,7 +17,7 @@ export const ACHIEVEMENT_TIERS = {
 };
 
 // ==================== 통계 데이터 구조 ====================
-let playerStats = {
+export let playerStats = {
     totalPlayTime: 0,           // 총 플레이 시간 (초)
     totalMonstersAvoided: 0,    // 총 피한 몬스터 수
     totalCoinsEarned: 0,        // 총 획득 코인 수
@@ -302,25 +304,84 @@ export const ACHIEVEMENTS = {
 let unlockedAchievements = new Set();
 
 /**
+ * 사용자별 로컬스토리지 키 생성
+ */
+function getUserStorageKey(baseKey) {
+    const user = getCurrentUserInfo();
+    if (user && user.id) {
+        return `${baseKey}-${user.id}`;
+    }
+    return baseKey; // 로그인하지 않은 경우 기본 키 사용
+}
+
+/**
  * 플레이어 통계 데이터 로드
  */
 export function loadPlayerStats() {
     try {
-        const saved = localStorage.getItem('wave-ver2-player-stats');
+        const statsKey = getUserStorageKey('wave-ver2-player-stats');
+        const achievementsKey = getUserStorageKey('wave-ver2-achievements');
+        
+        const saved = localStorage.getItem(statsKey);
         if (saved) {
             const parsedStats = JSON.parse(saved);
             playerStats = { ...playerStats, ...parsedStats };
+        } else {
+            // 저장된 데이터가 없으면 초기 데이터 사용
+            resetPlayerStatsToDefault();
         }
         
-        const savedAchievements = localStorage.getItem('wave-ver2-achievements');
+        const savedAchievements = localStorage.getItem(achievementsKey);
         if (savedAchievements) {
             unlockedAchievements = new Set(JSON.parse(savedAchievements));
+        } else {
+            unlockedAchievements = new Set();
         }
         
         console.log('플레이어 통계 및 업적 데이터 로드 완료');
     } catch (error) {
         console.error('플레이어 데이터 로드 실패:', error);
+        resetPlayerStatsToDefault();
+        unlockedAchievements = new Set();
     }
+}
+
+/**
+ * 플레이어 통계를 초기값으로 리셋
+ */
+function resetPlayerStatsToDefault() {
+    playerStats = {
+        totalPlayTime: 0,
+        totalMonstersAvoided: 0,
+        totalCoinsEarned: 0,
+        highestWave: 0,
+        totalGamesPlayed: 0,
+        totalDeaths: 0,
+        skillsUsed: {
+            dash: 0,
+            shield: 0,
+            slow: 0,
+            stop: 0
+        },
+        upgradesPurchased: 0,
+        gachaPulls: 0,
+        consecutiveWins: 0,
+        currentSession: {
+            startTime: 0,
+            monstersAvoided: 0,
+            coinsEarned: 0
+        }
+    };
+}
+
+/**
+ * 새 사용자 로그인 시 플레이어 통계 초기화
+ */
+export function initializeNewPlayerStats() {
+    console.log('🆕 새 사용자 플레이어 통계 초기화');
+    resetPlayerStatsToDefault();
+    unlockedAchievements = new Set();
+    savePlayerStats();
 }
 
 /**
@@ -328,8 +389,11 @@ export function loadPlayerStats() {
  */
 export function savePlayerStats() {
     try {
-        localStorage.setItem('wave-ver2-player-stats', JSON.stringify(playerStats));
-        localStorage.setItem('wave-ver2-achievements', JSON.stringify([...unlockedAchievements]));
+        const statsKey = getUserStorageKey('wave-ver2-player-stats');
+        const achievementsKey = getUserStorageKey('wave-ver2-achievements');
+        
+        localStorage.setItem(statsKey, JSON.stringify(playerStats));
+        localStorage.setItem(achievementsKey, JSON.stringify([...unlockedAchievements]));
     } catch (error) {
         console.error('플레이어 데이터 저장 실패:', error);
     }

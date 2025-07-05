@@ -13,7 +13,21 @@ import {
     supabase,
     SUPABASE_URL
 } from './supabase.js';
-import { gameData, saveGameData, loadGameData } from './economy.js';
+import { 
+    gameData, 
+    saveGameData, 
+    loadGameData, 
+    initializeNewUserData,
+    overwriteGameDataFromCloud 
+} from './economy.js';
+import { 
+    initializeNewPlayerStats, 
+    loadPlayerStats 
+} from './achievements.js';
+import { 
+    initializeNewUpgradeData, 
+    loadUpgradeData 
+} from './upgrade.js';
 
 // UI 요소들
 let authContainer = null;
@@ -285,20 +299,13 @@ async function checkInitialAuthState() {
                     // 페이지 새로고침 방지를 위해 해시 제거
                     window.history.replaceState({}, document.title, window.location.pathname);
                     
-                    // UI 업데이트 및 데이터 병합
+                    // UI 업데이트 및 데이터 처리
                     if (data.user) {
                         console.log('👤 사용자 정보:', data.user.email);
                         updateAuthUI(true, data.user);
                         
-                        // 클라우드 데이터 로드 및 병합
-                        try {
-                            const cloudData = await loadGameDataFromSupabase();
-                            if (cloudData) {
-                                await mergeGameData(cloudData);
-                            }
-                        } catch (error) {
-                            console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
-                        }
+                        // 새 사용자 처리
+                        await handleUserLogin(data.user);
                     }
                     
                     return;
@@ -324,18 +331,54 @@ async function checkInitialAuthState() {
         console.log('✅ 기존 사용자 로그인 상태:', user.email);
         updateAuthUI(true, user);
         
-        // 클라우드 데이터 확인 및 로드
-        try {
-            const cloudData = await loadGameDataFromSupabase();
-            if (cloudData) {
-                await mergeGameData(cloudData);
-            }
-        } catch (error) {
-            console.error('❌ 초기 클라우드 데이터 로드 실패:', error);
-        }
+        // 기존 사용자 데이터 로드
+        await handleUserLogin(user);
     } else {
         console.log('ℹ️ 로그인되지 않은 상태');
         updateAuthUI(false, null);
+    }
+}
+
+/**
+ * 사용자 로그인 처리 (새 사용자 vs 기존 사용자 구분)
+ */
+async function handleUserLogin(user) {
+    try {
+        console.log('👤 사용자 로그인 처리 시작:', user.email);
+        
+        // 클라우드 데이터 확인
+        const cloudData = await loadGameDataFromSupabase();
+        
+        if (cloudData) {
+            // 기존 사용자 - 클라우드 데이터로 덮어쓰기
+            console.log('🔄 기존 사용자 - 클라우드 데이터로 덮어쓰기');
+            overwriteGameDataFromCloud(cloudData);
+            
+            // 업그레이드 데이터와 통계 데이터도 다시 로드
+            loadUpgradeData();
+            loadPlayerStats();
+            
+        } else {
+            // 새 사용자 - 초기 데이터로 시작
+            console.log('🆕 새 사용자 - 초기 데이터로 시작');
+            initializeNewUserData();
+            initializeNewPlayerStats();
+            initializeNewUpgradeData();
+            
+            // 초기 데이터를 클라우드에 저장
+            await saveGameDataToSupabase(gameData);
+        }
+        
+        console.log('✅ 사용자 로그인 처리 완료');
+        
+    } catch (error) {
+        console.error('❌ 사용자 로그인 처리 실패:', error);
+        
+        // 에러 발생 시 로컬 데이터 사용
+        console.log('🔄 에러 발생으로 로컬 데이터 사용');
+        loadGameData();
+        loadUpgradeData();
+        loadPlayerStats();
     }
 }
 
@@ -346,20 +389,18 @@ function handleAuthStateChange(event, session) {
     if (event === 'SIGNED_IN' && session) {
         updateAuthUI(true, session.user);
         
-        // 로그인 직후 클라우드 데이터와 병합
+        // 로그인 직후 사용자 데이터 처리
         setTimeout(async () => {
-            try {
-                const cloudData = await loadGameDataFromSupabase();
-                if (cloudData) {
-                    await mergeGameData(cloudData);
-                }
-            } catch (error) {
-                console.error('❌ 로그인 후 데이터 병합 실패:', error);
-            }
+            await handleUserLogin(session.user);
         }, 1000);
         
     } else if (event === 'SIGNED_OUT') {
         updateAuthUI(false, null);
+        
+        // 로그아웃 시 로컬 데이터 다시 로드
+        loadGameData();
+        loadUpgradeData();
+        loadPlayerStats();
     }
 }
 
@@ -399,52 +440,6 @@ function updateAuthUI(isLoggedIn, user) {
             syncStatus.textContent = '💾 로컬 저장 중...';
         }
     }
-}
-
-/**
- * 클라우드 데이터와 로컬 데이터 병합
- */
-async function mergeGameData(cloudData) {
-    const localData = { ...gameData };
-    
-    console.log('🔄 데이터 병합 중...');
-    console.log('로컬 데이터:', localData);
-    console.log('클라우드 데이터:', cloudData);
-    
-    // 병합 전략: 최고값 기준
-    const mergedData = {
-        coins: Math.max(localData.coins, cloudData.coins),
-        totalMonstersAvoided: Math.max(localData.totalMonstersAvoided, cloudData.totalMonstersAvoided),
-        bestScore: Math.max(localData.bestScore, cloudData.bestScore),
-        unlockedSkills: { ...localData.unlockedSkills },
-        skillLevels: { ...localData.skillLevels }
-    };
-    
-    // 스킬 해제 상태 병합 (OR 연산)
-    for (const skill in cloudData.unlockedSkills) {
-        mergedData.unlockedSkills[skill] = 
-            localData.unlockedSkills[skill] || cloudData.unlockedSkills[skill];
-    }
-    
-    // 스킬 레벨 병합 (최고값)
-    for (const skill in cloudData.skillLevels) {
-        mergedData.skillLevels[skill] = Math.max(
-            localData.skillLevels[skill] || 1,
-            cloudData.skillLevels[skill] || 1
-        );
-    }
-    
-    // 로컬 데이터 업데이트
-    Object.assign(gameData, mergedData);
-    saveGameData();
-    
-    // 클라우드에 병합된 데이터 저장
-    await saveGameDataToSupabase(mergedData);
-    
-    console.log('✅ 데이터 병합 완료:', mergedData);
-    
-    // UI 업데이트를 위한 이벤트 발생
-    window.dispatchEvent(new CustomEvent('gameDataUpdated', { detail: mergedData }));
 }
 
 /**

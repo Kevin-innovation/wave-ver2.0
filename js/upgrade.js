@@ -2,8 +2,15 @@
  * 스킬 업그레이드 시스템
  */
 
-import { getCoins, spendCoins, isSkillUnlocked } from './economy.js';
+import { getCoins, spendCoins, isSkillUnlocked, gameData, saveGameData } from './economy.js';
 import { recordUpgradePurchase } from './achievements.js';
+import { isLoggedIn, getCurrentUserInfo } from './auth.js';
+
+// 상수 정의
+const UPGRADE_BUTTON_WIDTH = 350;
+const UPGRADE_BUTTON_HEIGHT = 100;
+const UPGRADE_BUTTONS_Y = [180, 290, 400, 510];
+const UPGRADE_BUTTONS_X = 225;
 
 // ==================== 업그레이드 설정 ====================
 export const UPGRADE_CONFIG = {
@@ -27,20 +34,52 @@ let upgradeData = {
 };
 
 /**
+ * 사용자별 로컬스토리지 키 생성
+ */
+function getUserStorageKey(baseKey) {
+    const user = getCurrentUserInfo();
+    if (user && user.id) {
+        return `${baseKey}-${user.id}`;
+    }
+    return baseKey; // 로그인하지 않은 경우 기본 키 사용
+}
+
+/**
  * 업그레이드 데이터 로드
  */
 export function loadUpgradeData() {
     try {
-        const saved = localStorage.getItem('wave-ver2-upgrades');
+        const storageKey = getUserStorageKey('wave-ver2-upgrades');
+        const saved = localStorage.getItem(storageKey);
         if (saved) {
             const parsedData = JSON.parse(saved);
             upgradeData.levels = parsedData.levels || { h: 1, j: 1, k: 1, l: 1 };
             console.log('업그레이드 데이터 로드 완료:', upgradeData);
+        } else {
+            // 저장된 데이터가 없으면 초기 데이터 사용
+            resetUpgradeDataToDefault();
+            console.log('초기 업그레이드 데이터 설정 완료');
         }
     } catch (error) {
         console.error('업그레이드 데이터 로드 실패:', error);
-        upgradeData.levels = { h: 1, j: 1, k: 1, l: 1 };
+        resetUpgradeDataToDefault();
     }
+}
+
+/**
+ * 업그레이드 데이터를 초기값으로 리셋
+ */
+function resetUpgradeDataToDefault() {
+    upgradeData.levels = { h: 1, j: 1, k: 1, l: 1 };
+}
+
+/**
+ * 새 사용자 로그인 시 업그레이드 데이터 초기화
+ */
+export function initializeNewUpgradeData() {
+    console.log('🆕 새 사용자 업그레이드 데이터 초기화');
+    resetUpgradeDataToDefault();
+    saveUpgradeData();
 }
 
 /**
@@ -48,7 +87,8 @@ export function loadUpgradeData() {
  */
 export function saveUpgradeData() {
     try {
-        localStorage.setItem('wave-ver2-upgrades', JSON.stringify(upgradeData));
+        const storageKey = getUserStorageKey('wave-ver2-upgrades');
+        localStorage.setItem(storageKey, JSON.stringify(upgradeData));
         console.log('업그레이드 데이터 저장 완료:', upgradeData);
     } catch (error) {
         console.error('업그레이드 데이터 저장 실패:', error);

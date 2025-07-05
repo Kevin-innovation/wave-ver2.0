@@ -3,9 +3,10 @@
  */
 
 import { saveGameDataToSupabase as saveToCloud } from './supabase.js';
+import { isLoggedIn, getCurrentUserInfo } from './auth.js';
 
 // ==================== 코인 시스템 ====================
-export let gameData = {
+export const gameData = {
     coins: 0,
     totalMonstersAvoided: 0,
     bestScore: 0,  // 최고 웨이브 기록
@@ -21,11 +22,24 @@ export let gameData = {
 };
 
 /**
+ * 사용자별 로컬스토리지 키 생성
+ */
+function getUserStorageKey(baseKey) {
+    const user = getCurrentUserInfo();
+    if (user && user.id) {
+        return `${baseKey}-${user.id}`;
+    }
+    return baseKey; // 로그인하지 않은 경우 기본 키 사용
+}
+
+/**
  * 게임 데이터를 localStorage에서 불러오기
  */
 export function loadGameData() {
     try {
-        const saved = localStorage.getItem('wave-ver2-gamedata');
+        const storageKey = getUserStorageKey('wave-ver2-gamedata');
+        const saved = localStorage.getItem(storageKey);
+        
         if (saved) {
             const parsedData = JSON.parse(saved);
             gameData.coins = parsedData.coins || 0;
@@ -38,15 +52,55 @@ export function loadGameData() {
                 h: 1, j: 1, k: 1, l: 1
             };
             console.log('게임 데이터 로드 완료:', gameData);
+        } else {
+            // 저장된 데이터가 없으면 초기 데이터 사용
+            resetGameDataToDefault();
+            console.log('초기 게임 데이터 설정 완료');
         }
     } catch (error) {
         console.error('게임 데이터 로드 실패:', error);
-        gameData.coins = 0;
-        gameData.totalMonstersAvoided = 0;
-        gameData.bestScore = 0;
-        gameData.unlockedSkills = { h: true, j: false, k: false, l: false };
-        gameData.skillLevels = { h: 1, j: 1, k: 1, l: 1 };
+        resetGameDataToDefault();
     }
+}
+
+/**
+ * 게임 데이터를 초기값으로 리셋
+ */
+function resetGameDataToDefault() {
+    gameData.coins = 0;
+    gameData.totalMonstersAvoided = 0;
+    gameData.bestScore = 0;
+    gameData.unlockedSkills = { h: true, j: false, k: false, l: false };
+    gameData.skillLevels = { h: 1, j: 1, k: 1, l: 1 };
+}
+
+/**
+ * 새 사용자 로그인 시 로컬 데이터 초기화
+ */
+export function initializeNewUserData() {
+    console.log('🆕 새 사용자 데이터 초기화');
+    resetGameDataToDefault();
+    saveGameData();
+}
+
+/**
+ * 클라우드 데이터로 로컬 데이터 덮어쓰기 (병합 아님)
+ */
+export function overwriteGameDataFromCloud(cloudData) {
+    console.log('☁️ 클라우드 데이터로 로컬 데이터 덮어쓰기');
+    console.log('클라우드 데이터:', cloudData);
+    
+    gameData.coins = cloudData.coins || 0;
+    gameData.totalMonstersAvoided = cloudData.totalMonstersAvoided || 0;
+    gameData.bestScore = cloudData.bestScore || 0;
+    gameData.unlockedSkills = cloudData.unlockedSkills || { h: true, j: false, k: false, l: false };
+    gameData.skillLevels = cloudData.skillLevels || { h: 1, j: 1, k: 1, l: 1 };
+    
+    saveGameData();
+    console.log('✅ 클라우드 데이터로 덮어쓰기 완료:', gameData);
+    
+    // UI 업데이트를 위한 이벤트 발생
+    window.dispatchEvent(new CustomEvent('gameDataUpdated', { detail: gameData }));
 }
 
 /**
@@ -54,7 +108,8 @@ export function loadGameData() {
  */
 export function saveGameData() {
     try {
-        localStorage.setItem('wave-ver2-gamedata', JSON.stringify(gameData));
+        const storageKey = getUserStorageKey('wave-ver2-gamedata');
+        localStorage.setItem(storageKey, JSON.stringify(gameData));
         console.log('게임 데이터 저장 완료:', gameData);
     } catch (error) {
         console.error('게임 데이터 저장 실패:', error);
