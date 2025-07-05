@@ -557,4 +557,243 @@ canvas {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.8);
     margin-top: 2px;
-} 
+}
+
+/* ==================== 이메일/패스워드 인증 UI 스타일 ==================== */
+
+/* 인증 방법 토글 버튼 */
+.auth-toggle-bottom {
+    margin-bottom: 10px;
+}
+
+.toggle-auth-btn-bottom {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.toggle-auth-btn-bottom:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 이메일 인증 섹션 */
+.email-auth-section-bottom {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-top: 10px;
+    backdrop-filter: blur(10px);
+    min-width: 280px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 인증 탭 버튼들 */
+.email-auth-tabs-bottom {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.auth-tab-btn-bottom {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex: 1;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.auth-tab-btn-bottom:hover {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+}
+
+.auth-tab-btn-bottom.active {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+/* 인증 폼 섹션 */
+.auth-form-section-bottom {
+    padding: 5px 0;
+}
+
+.auth-form-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.auth-input-bottom {
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+    transition: all 0.2s;
+    color: #495057;
+}
+
+.auth-input-bottom:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.auth-input-bottom::placeholder {
+    color: #6c757d;
+}
+
+.auth-submit-btn-bottom {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.auth-submit-btn-bottom:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.auth-submit-btn-bottom:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 패스워드 찾기 버튼 */
+.forgot-password-btn-bottom {
+    background: transparent;
+    color: #6c757d;
+    border: none;
+    padding: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+    align-self: center;
+}
+
+.forgot-password-btn-bottom:hover {
+    color: #007bff;
+}
+
+/* 뒤로가기 버튼 */
+.back-btn-bottom {
+    background: transparent;
+    color: #6c757d;
+    border: none;
+    padding: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+    margin-top: 10px;
+    align-self: flex-start;
+}
+
+.back-btn-bottom:hover {
+    color: #007bff;
+}
+
+/* 반응형 디자인 추가 */
+@media (max-width: 768px) {
+    .email-auth-section-bottom {
+        min-width: 260px;
+        padding: 12px;
+    }
+    
+    .auth-form-bottom {
+        gap: 10px;
+    }
+    
+    .auth-input-bottom {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    
+    .auth-submit-btn-bottom {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+         .auth-container-bottom {
+         left: 10px;
+         right: 10px;
+         transform: none;
+         max-width: calc(100% - 20px);
+     }
+}
+
+/* ==================== 토스트 알림 스타일 ==================== */
+
+.auth-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    z-index: 10000;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.auth-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.auth-toast-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.auth-toast-error {
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+}
+
+.auth-toast-info {
+    background: linear-gradient(135deg, #007bff, #6f42c1);
+}
+
+/* 반응형 토스트 */
+@media (max-width: 768px) {
+    .auth-toast {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        transform: translateY(-100%);
+        top: 10px;
+    }
+    
+    .auth-toast.show {
+        transform: translateY(0);
+    }
+}

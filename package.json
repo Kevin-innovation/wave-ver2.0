@@ -10,6 +10,7 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "^2025.7.1",
     "@supabase/supabase-js": "^2.39.3"
   },
   "devDependencies": {
@@ -29,4 +30,4 @@
     "type": "git",
     "url": "https://github.com/Kevin-innovation/wave-ver2.0.git"
   }
-} 
+}

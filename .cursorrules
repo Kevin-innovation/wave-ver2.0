@@ -3,6 +3,34 @@
 ## 🎮 프로젝트 개요
 JavaScript Canvas 기반 웨이브 서바이벌 게임
 
+## 🤖 추천 MCP 도구들
+
+### 현재 활성화된 MCP
+- **Supabase MCP**: 데이터베이스 관리, Edge Functions, 로그 확인
+- **Context7 MCP**: 라이브러리 문서 검색, API 레퍼런스
+
+### 추천 추가 MCP 도구들
+```bash
+# 게임 개발 필수
+npm install @modelcontextprotocol/server-github      # Git 관리
+npm install @modelcontextprotocol/server-filesystem  # 파일 관리
+npm install @modelcontextprotocol/server-web-search  # 실시간 검색
+
+# 성능 최적화
+npm install @modelcontextprotocol/server-performance # 성능 모니터링
+npm install @modelcontextprotocol/server-postgres    # DB 최적화
+
+# 개발 편의성
+npm install @modelcontextprotocol/server-memory      # 컨텍스트 유지
+npm install @modelcontextprotocol/server-canvas      # Canvas 최적화
+```
+
+### MCP 활용 팁
+1. **Supabase MCP**: 데이터베이스 스키마 변경 시 적극 활용
+2. **Context7 MCP**: 새로운 API 사용 전 문서 확인
+3. **Web Search MCP**: 성능 최적화 기법 검색
+4. **Performance MCP**: 게임 루프 최적화
+
 ## 📝 코딩 스타일
 
 ### JavaScript 규칙

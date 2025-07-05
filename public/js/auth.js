@@ -11,7 +11,11 @@ import {
     saveGameDataToSupabase,
     loadGameDataFromSupabase,
     supabase,
-    SUPABASE_URL
+    SUPABASE_URL,
+    // 이메일/패스워드 인증 함수들
+    signUpWithEmail,
+    signInWithEmail,
+    resetPasswordForEmail
 } from './supabase.js';
 import { 
     gameData, 
@@ -22,12 +26,24 @@ import {
 } from './economy.js';
 import { 
     initializeNewPlayerStats, 
-    loadPlayerStats 
+    loadPlayerStats,
+    savePlayerStats,
+    playerStats,
+    getUnlockedAchievements
 } from './achievements.js';
 import { 
     initializeNewUpgradeData, 
-    loadUpgradeData 
+    loadUpgradeData,
+    upgradeData
 } from './upgrade.js';
+import {
+    getUnlockedGuides,
+    refreshGuidesFromCloud
+} from './shop.js';
+import {
+    saveGuidesToSupabase,
+    loadGuidesFromSupabase
+} from './supabase.js';
 
 // UI 요소들
 let authContainer = null;
@@ -48,6 +64,36 @@ export function initAuthUI() {
 }
 
 /**
+ * 사용자 알림 토스트 표시
+ * @param {string} message - 표시할 메시지
+ * @param {string} type - 알림 타입 ('success', 'error', 'info')
+ */
+function showToast(message, type = 'info') {
+    // 기존 토스트 제거
+    const existingToast = document.querySelector('.auth-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // 토스트 생성
+    const toast = document.createElement('div');
+    toast.className = `auth-toast auth-toast-${type}`;
+    toast.textContent = message;
+    
+    // 화면에 추가
+    document.body.appendChild(toast);
+    
+    // 애니메이션
+    setTimeout(() => toast.classList.add('show'), 100);
+    
+    // 3초 후 제거
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+/**
  * 인증 관련 DOM 요소들 생성
  */
 function createAuthElements() {
@@ -58,10 +104,57 @@ function createAuthElements() {
     authContainer.innerHTML = `
         <div class="auth-section-bottom">
             <div id="login-section" class="login-section-bottom">
-                <button id="google-login-btn" class="google-login-btn-bottom">
-                    <span class="google-icon">🔐</span>
-                    Google 로그인하여 랭킹 참여하기
-                </button>
+                <!-- 인증 방법 선택 토글 -->
+                <div class="auth-toggle-bottom">
+                    <button id="toggle-auth-method" class="toggle-auth-btn-bottom">
+                        📧 이메일 로그인
+                    </button>
+                </div>
+                
+                <!-- Google 로그인 (기본) -->
+                <div id="google-auth-section" class="google-auth-section-bottom">
+                    <button id="google-login-btn" class="google-login-btn-bottom">
+                        <span class="google-icon">🔐</span>
+                        Google 로그인하여 랭킹 참여하기
+                    </button>
+                </div>
+                
+                <!-- 이메일 로그인 (숨김) -->
+                <div id="email-auth-section" class="email-auth-section-bottom" style="display: none;">
+                    <div class="email-auth-tabs-bottom">
+                        <button id="login-tab" class="auth-tab-btn-bottom active">로그인</button>
+                        <button id="signup-tab" class="auth-tab-btn-bottom">회원가입</button>
+                    </div>
+                    
+                    <!-- 로그인 폼 -->
+                    <div id="login-form-section" class="auth-form-section-bottom">
+                        <form id="email-login-form" class="auth-form-bottom">
+                            <input type="email" id="login-email" placeholder="이메일" required class="auth-input-bottom">
+                            <input type="password" id="login-password" placeholder="패스워드" required class="auth-input-bottom">
+                            <button type="submit" class="auth-submit-btn-bottom">🔑 로그인</button>
+                        </form>
+                        <button id="forgot-password-btn" class="forgot-password-btn-bottom">패스워드 찾기</button>
+                    </div>
+                    
+                    <!-- 회원가입 폼 -->
+                    <div id="signup-form-section" class="auth-form-section-bottom" style="display: none;">
+                        <form id="email-signup-form" class="auth-form-bottom">
+                            <input type="email" id="signup-email" placeholder="이메일" required class="auth-input-bottom">
+                            <input type="password" id="signup-password" placeholder="패스워드 (최소 6자리)" required class="auth-input-bottom">
+                            <input type="password" id="signup-password-confirm" placeholder="패스워드 확인" required class="auth-input-bottom">
+                            <button type="submit" class="auth-submit-btn-bottom">📝 회원가입</button>
+                        </form>
+                    </div>
+                    
+                    <!-- 패스워드 찾기 폼 -->
+                    <div id="forgot-password-section" class="auth-form-section-bottom" style="display: none;">
+                        <form id="forgot-password-form" class="auth-form-bottom">
+                            <input type="email" id="forgot-email" placeholder="이메일" required class="auth-input-bottom">
+                            <button type="submit" class="auth-submit-btn-bottom">🔄 재설정 이메일 전송</button>
+                        </form>
+                        <button id="back-to-login-btn" class="back-btn-bottom">← 로그인으로 돌아가기</button>
+                    </div>
+                </div>
             </div>
             
             <div id="user-info-section" class="user-info-section-bottom" style="display: none;">
@@ -98,6 +191,24 @@ function setupAuthEventListeners() {
     
     // 동기화 버튼
     document.getElementById('sync-data-btn')?.addEventListener('click', handleSyncData);
+    
+    // 인증 방법 토글 버튼
+    document.getElementById('toggle-auth-method')?.addEventListener('click', handleToggleAuthMethod);
+    
+    // 탭 전환 버튼들
+    document.getElementById('login-tab')?.addEventListener('click', () => showAuthTab('login'));
+    document.getElementById('signup-tab')?.addEventListener('click', () => showAuthTab('signup'));
+    
+    // 이메일 로그인 폼
+    document.getElementById('email-login-form')?.addEventListener('submit', handleEmailLogin);
+    
+    // 이메일 회원가입 폼
+    document.getElementById('email-signup-form')?.addEventListener('submit', handleEmailSignup);
+    
+    // 패스워드 찾기 관련
+    document.getElementById('forgot-password-btn')?.addEventListener('click', showForgotPasswordForm);
+    document.getElementById('forgot-password-form')?.addEventListener('submit', handleForgotPassword);
+    document.getElementById('back-to-login-btn')?.addEventListener('click', showLoginForm);
 }
 
 /**
@@ -162,6 +273,205 @@ async function handleLogout() {
 }
 
 /**
+ * 인증 방법 토글 처리
+ */
+function handleToggleAuthMethod() {
+    const googleSection = document.getElementById('google-auth-section');
+    const emailSection = document.getElementById('email-auth-section');
+    const toggleBtn = document.getElementById('toggle-auth-method');
+    
+    if (emailSection.style.display === 'none') {
+        // 이메일 로그인 모드로 전환
+        googleSection.style.display = 'none';
+        emailSection.style.display = 'block';
+        toggleBtn.textContent = '🔐 Google 로그인';
+    } else {
+        // Google 로그인 모드로 전환
+        googleSection.style.display = 'block';
+        emailSection.style.display = 'none';
+        toggleBtn.textContent = '📧 이메일 로그인';
+    }
+}
+
+/**
+ * 인증 탭 전환 처리
+ */
+function showAuthTab(tabName) {
+    const loginTab = document.getElementById('login-tab');
+    const signupTab = document.getElementById('signup-tab');
+    const loginForm = document.getElementById('login-form-section');
+    const signupForm = document.getElementById('signup-form-section');
+    const forgotForm = document.getElementById('forgot-password-section');
+    
+    // 모든 폼 숨기기
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'none';
+    forgotForm.style.display = 'none';
+    
+    // 모든 탭 비활성화
+    loginTab.classList.remove('active');
+    signupTab.classList.remove('active');
+    
+    if (tabName === 'login') {
+        loginForm.style.display = 'block';
+        loginTab.classList.add('active');
+    } else if (tabName === 'signup') {
+        signupForm.style.display = 'block';
+        signupTab.classList.add('active');
+    }
+}
+
+/**
+ * 이메일 로그인 처리
+ */
+async function handleEmailLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    
+    if (!email || !password) {
+        showToast('이메일과 패스워드를 입력해주세요.', 'error');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = '🔄 로그인 중...';
+    
+    try {
+        const result = await signInWithEmail(email, password);
+        
+        if (result.success) {
+            console.log('✅ 이메일 로그인 성공');
+            // 폼 리셋
+            event.target.reset();
+            // UI는 onAuthStateChange에서 자동으로 업데이트됨
+        } else {
+            showToast('로그인 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('❌ 로그인 오류:', error);
+        showToast('로그인 중 오류가 발생했습니다.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔑 로그인';
+    }
+}
+
+/**
+ * 이메일 회원가입 처리
+ */
+async function handleEmailSignup(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const passwordConfirm = document.getElementById('signup-password-confirm').value;
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    
+    if (!email || !password || !passwordConfirm) {
+        showToast('모든 필드를 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (password !== passwordConfirm) {
+        showToast('패스워드가 일치하지 않습니다.', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('패스워드는 최소 6자리 이상이어야 합니다.', 'error');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = '🔄 회원가입 중...';
+    
+    try {
+        const result = await signUpWithEmail(email, password);
+        
+        if (result.success) {
+            console.log('✅ 이메일 회원가입 성공');
+            
+            // 회원가입 성공 시 바로 완료 처리
+            showToast(result.message || '회원가입이 완료되었습니다! 바로 게임을 시작할 수 있습니다.', 'success');
+            
+            // 폼 리셋
+            event.target.reset();
+            
+            // UI는 onAuthStateChange에서 자동으로 업데이트됨
+        } else {
+            showToast('회원가입 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('❌ 회원가입 오류:', error);
+        showToast('회원가입 중 오류가 발생했습니다.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📝 회원가입';
+    }
+}
+
+/**
+ * 패스워드 찾기 폼 표시
+ */
+function showForgotPasswordForm() {
+    const loginForm = document.getElementById('login-form-section');
+    const forgotForm = document.getElementById('forgot-password-section');
+    
+    loginForm.style.display = 'none';
+    forgotForm.style.display = 'block';
+}
+
+/**
+ * 로그인 폼 표시
+ */
+function showLoginForm() {
+    const loginForm = document.getElementById('login-form-section');
+    const forgotForm = document.getElementById('forgot-password-section');
+    
+    loginForm.style.display = 'block';
+    forgotForm.style.display = 'none';
+}
+
+/**
+ * 패스워드 찾기 처리
+ */
+async function handleForgotPassword(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('forgot-email').value;
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    
+    if (!email) {
+        showToast('이메일을 입력해주세요.', 'error');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = '🔄 전송 중...';
+    
+    try {
+        const result = await resetPasswordForEmail(email);
+        
+        if (result.success) {
+            showToast('패스워드 재설정 이메일이 전송되었습니다. 이메일을 확인해주세요.', 'success');
+            event.target.reset();
+            showLoginForm();
+        } else {
+            showToast('이메일 전송 실패: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('❌ 패스워드 재설정 오류:', error);
+        showToast('패스워드 재설정 중 오류가 발생했습니다.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔄 재설정 이메일 전송';
+    }
+}
+
+/**
  * 데이터 동기화 처리
  */
 async function handleSyncData() {
@@ -174,16 +484,32 @@ async function handleSyncData() {
     statusDiv.textContent = '🔄 클라우드와 동기화 중...';
     
     try {
-        // 1. 로컬 데이터 클라우드에 저장
-        const saveResult = await saveGameDataToSupabase(gameData);
+        // 1. 게임 데이터 (스킬 + 업그레이드 + 경제 데이터) 저장
+        const gameDataWithUpgrades = {
+            ...gameData,
+            upgradeLevels: upgradeData.levels || {}
+        };
         
-        if (saveResult.success) {
-            statusDiv.textContent = '✅ 클라우드 저장 완료!';
-            console.log('✅ 데이터 동기화 성공');
-        } else {
-            statusDiv.textContent = '❌ 동기화 실패: ' + saveResult.error;
-            console.error('❌ 데이터 동기화 실패:', saveResult.error);
+        const saveGameResult = await saveGameDataToSupabase(gameDataWithUpgrades);
+        
+        if (!saveGameResult.success) {
+            throw new Error('게임 데이터 저장 실패: ' + saveGameResult.error);
         }
+        
+        // 2. 도전과제 데이터 저장
+        await savePlayerStats();
+        
+        // 3. 해금된 가이드 데이터 저장
+        const unlockedGuides = getUnlockedGuides();
+        const guideIds = unlockedGuides.map(guide => guide.id);
+        const saveGuidesResult = await saveGuidesToSupabase(guideIds);
+        
+        if (!saveGuidesResult.success) {
+            console.warn('⚠️ 가이드 데이터 저장 실패:', saveGuidesResult.error);
+        }
+        
+        statusDiv.textContent = '✅ 모든 데이터 동기화 완료!';
+        console.log('✅ 전체 데이터 동기화 성공 (게임 + 도전과제 + 가이드)');
         
         // 3초 후 상태 원복
         setTimeout(() => {
@@ -203,7 +529,7 @@ async function handleSyncData() {
         }, 3000);
     } finally {
         button.disabled = false;
-        button.textContent = '🔄 클라우드와 동기화';
+        button.textContent = '🔄 동기화';
     }
 }
 
@@ -356,13 +682,16 @@ async function handleUserLogin(user) {
             
             // 업그레이드 데이터와 통계 데이터도 다시 로드
             loadUpgradeData();
-            loadPlayerStats();
+            await loadPlayerStats();
+            
+            // 해금된 가이드 데이터도 클라우드에서 새로고침
+            await refreshGuidesFromCloud();
             
         } else {
             // 새 사용자 - 초기 데이터로 시작
             console.log('🆕 새 사용자 - 초기 데이터로 시작');
             initializeNewUserData();
-            initializeNewPlayerStats();
+            await initializeNewPlayerStats();
             initializeNewUpgradeData();
             
             // 초기 데이터를 클라우드에 저장
@@ -378,7 +707,7 @@ async function handleUserLogin(user) {
         console.log('🔄 에러 발생으로 로컬 데이터 사용');
         loadGameData();
         loadUpgradeData();
-        loadPlayerStats();
+        await loadPlayerStats();
     }
 }
 

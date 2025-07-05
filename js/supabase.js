@@ -99,6 +99,136 @@ export async function signOut() {
 }
 
 /**
+ * 이메일/패스워드로 회원가입
+ * @param {string} email - 이메일 주소
+ * @param {string} password - 패스워드
+ * @returns {Object} 회원가입 결과 
+ */
+export async function signUpWithEmail(email, password) {
+    try {
+        console.log('📝 이메일 회원가입 시도...', email);
+        
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                // 이메일 확인 완료 후 리다이렉트 URL
+                emailRedirectTo: window.location.origin + '/',
+                data: {
+                    // 추가 사용자 메타데이터
+                    sign_up_method: 'email'
+                }
+            }
+        });
+
+        if (error) {
+            console.error('❌ 이메일 회원가입 실패:', error);
+            
+            // 에러 타입별 처리
+            if (error.message.includes('User already registered')) {
+                return { success: false, error: '이미 가입된 이메일입니다.' };
+            } else if (error.message.includes('Invalid email')) {
+                return { success: false, error: '올바른 이메일 주소를 입력해주세요.' };
+            } else if (error.message.includes('Password should be at least')) {
+                return { success: false, error: '패스워드는 최소 6자리 이상이어야 합니다.' };
+            } else {
+                return { success: false, error: '회원가입 중 오류가 발생했습니다: ' + error.message };
+            }
+        }
+
+        console.log('✅ 이메일 회원가입 성공');
+        console.log('📊 회원가입 데이터:', data);
+        
+        // 이메일 확인이 비활성화되어 있으므로 바로 회원가입 완료
+        if (data.user) {
+            currentUser = data.user;  // 사용자 정보 즉시 설정
+            return { 
+                success: true, 
+                data: data,
+                message: '회원가입이 완료되었습니다! 바로 게임을 시작할 수 있습니다.'
+            };
+        }
+        
+        return { success: true, data: data };
+        
+    } catch (error) {
+        console.error('❌ 이메일 회원가입 오류:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * 이메일/패스워드로 로그인
+ * @param {string} email - 이메일 주소
+ * @param {string} password - 패스워드
+ * @returns {Object} 로그인 결과
+ */
+export async function signInWithEmail(email, password) {
+    try {
+        console.log('🔐 이메일 로그인 시도...', email);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            console.error('❌ 이메일 로그인 실패:', error);
+            
+            // 에러 타입별 처리
+            if (error.message.includes('Invalid login credentials')) {
+                return { success: false, error: '이메일 또는 패스워드가 올바르지 않습니다.' };
+            } else if (error.message.includes('Email not confirmed')) {
+                return { success: false, error: '이메일 인증을 완료해주세요.' };
+            } else if (error.message.includes('Invalid email')) {
+                return { success: false, error: '올바른 이메일 주소를 입력해주세요.' };
+            } else {
+                return { success: false, error: '로그인 중 오류가 발생했습니다: ' + error.message };
+            }
+        }
+
+        if (data.user) {
+            currentUser = data.user;
+            console.log('✅ 이메일 로그인 성공:', currentUser.email);
+            return { success: true, data: data };
+        }
+        
+        return { success: false, error: '로그인에 실패했습니다.' };
+        
+    } catch (error) {
+        console.error('❌ 이메일 로그인 오류:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * 패스워드 재설정 이메일 전송
+ * @param {string} email - 이메일 주소
+ * @returns {Object} 전송 결과
+ */
+export async function resetPasswordForEmail(email) {
+    try {
+        console.log('🔄 패스워드 재설정 이메일 전송 시도...', email);
+        
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/#password-reset'
+        });
+
+        if (error) {
+            console.error('❌ 패스워드 재설정 이메일 전송 실패:', error);
+            return { success: false, error: '패스워드 재설정 이메일 전송에 실패했습니다: ' + error.message };
+        }
+
+        console.log('✅ 패스워드 재설정 이메일 전송 성공');
+        return { success: true, data: data };
+        
+    } catch (error) {
+        console.error('❌ 패스워드 재설정 오류:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * 현재 사용자 세션 확인
  */
 export async function getCurrentUser() {
