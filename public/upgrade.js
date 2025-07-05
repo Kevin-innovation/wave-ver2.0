@@ -24,7 +24,7 @@ export const UPGRADE_CONFIG = {
 };
 
 // ==================== 스킬 업그레이드 데이터 ====================
-let upgradeData = {
+export let upgradeData = {
     levels: {
         h: 1,  // 대시 레벨 (1~20)
         j: 1,  // 실드 레벨 (1~20)
