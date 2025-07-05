@@ -23,12 +23,14 @@ export let currentUser = null;
  */
 export async function signInWithGoogle() {
     try {
+        const redirectUrl = window.location.origin + '/';
         console.log('🚀 Google 로그인 시도...');
+        console.log('🔗 리다이렉트 URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'https://kevin-innovation.github.io/wave-ver2.0/',
+                redirectTo: redirectUrl,
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
