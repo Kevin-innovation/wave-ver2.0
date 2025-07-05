@@ -4,7 +4,7 @@
 
 import { resetGame } from './game.js';
 import { GAME_STATES } from './utils.js';
-import { switchToGame, switchToShop, switchToUpgrade, switchToRanking, getCurrentUIState, UI_STATES } from './ui.js';
+import { switchToGame, switchToShop, switchToUpgrade, switchToAchievements, switchToRanking, getCurrentUIState, UI_STATES } from './ui.js';
 import { handleShopClick } from './shop.js';
 import { handleUpgradeClick } from './upgrade.js';
 
@@ -86,6 +86,10 @@ export function setupInputListeners(gameState, canvas) {
                 event.preventDefault();
                 break;
             case 'Digit4':
+                switchToAchievements();
+                event.preventDefault();
+                break;
+            case 'Digit5':
                 switchToRanking();
                 event.preventDefault();
                 break;

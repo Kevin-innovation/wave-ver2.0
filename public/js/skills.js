@@ -6,6 +6,7 @@ import { player } from './player.js';
 import { monsters, getActiveMonsterCount } from './monster.js';
 import { isSkillUnlocked } from './economy.js';
 import { calculateSkillEffect } from './upgrade.js';
+import { recordSkillUse } from './achievements.js';
 
 // ==================== 스킬 시스템 ====================
 export const skills = {
@@ -93,6 +94,9 @@ export function useDashSkill(keys, canvasWidth, canvasHeight) {
     player.y = newY;
     
     skills.dash.cooldown = skills.dash.maxCooldown;
+    
+    // 도전과제 통계 기록
+    recordSkillUse('dash');
 }
 
 /**
@@ -108,6 +112,9 @@ export function useShieldSkill() {
     skills.shield.active = true;
     skills.shield.duration = skills.shield.maxDuration;
     skills.shield.cooldown = skills.shield.maxCooldown;
+    
+    // 도전과제 통계 기록
+    recordSkillUse('shield');
 }
 
 /**
@@ -124,6 +131,9 @@ export function useSlowSkill() {
     skills.slow.duration = skills.slow.maxDuration;
     skills.slow.cooldown = skills.slow.maxCooldown;
     console.log('슬로우 스킬 활성화!'); // 디버깅용
+    
+    // 도전과제 통계 기록
+    recordSkillUse('slow');
 }
 
 /**
@@ -140,6 +150,9 @@ export function useStopSkill() {
     skills.stop.duration = skills.stop.maxDuration;
     skills.stop.cooldown = skills.stop.maxCooldown;
     console.log('스톱 스킬 활성화! 몬스터들이 3초간 정지합니다.'); // 디버깅용
+    
+    // 도전과제 통계 기록
+    recordSkillUse('stop');
 }
 
 /**

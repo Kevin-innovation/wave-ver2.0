@@ -3,6 +3,7 @@
  */
 
 import { getCoins, spendCoins, isSkillUnlocked } from './economy.js';
+import { recordUpgradePurchase } from './achievements.js';
 
 // ==================== 업그레이드 설정 ====================
 export const UPGRADE_CONFIG = {
@@ -66,10 +67,15 @@ export function getSkillLevel(skillKey) {
 /**
  * 업그레이드 비용 계산 (더 복잡한 공식)
  * @param {string} skillKey - 스킬 키
- * @param {number} currentLevel - 현재 레벨
+ * @param {number} currentLevel - 현재 레벨 (생략 시 자동으로 가져옴)
  * @returns {number} - 업그레이드 비용
  */
 export function getUpgradeCost(skillKey, currentLevel) {
+    // currentLevel이 전달되지 않은 경우 현재 레벨을 가져옴
+    if (currentLevel === undefined || currentLevel === null) {
+        currentLevel = getSkillLevel(skillKey);
+    }
+    
     const baseCost = UPGRADE_CONFIG.baseCosts[skillKey] || 8;
     
     // 더 복잡한 비용 계산 공식
@@ -163,6 +169,9 @@ export function upgradeSkill(skillKey) {
     // 레벨 업
     upgradeData.levels[skillKey]++;
     saveUpgradeData();
+    
+    // 도전과제 통계 기록
+    recordUpgradePurchase();
     
     // 스킬 설정 즉시 업데이트 (동적 import로 순환 의존성 방지)
     import('./skills.js').then(skillsModule => {
@@ -269,21 +278,22 @@ export function initUpgradeSystem() {
  * @returns {boolean} - 클릭 처리 여부
  */
 export function handleUpgradeClick(mouseX, mouseY, canvasWidth) {
-    // 스킬 박스들의 위치 (ui.js의 renderUpgradeScreen과 동일)
+    // 스킬 박스들의 위치 (ui.js의 renderUpgradeScreen과 정확히 동일)
+    const startY = 180;
+    const skillHeight = 100;
+    const skillWidth = 350;
+    const skillX = canvasWidth/2 - skillWidth/2;
+    
     const skillBoxes = [
-        { key: 'h', y: 220 },
-        { key: 'j', y: 280 },
-        { key: 'k', y: 340 },
-        { key: 'l', y: 400 }
+        { key: 'h', y: startY + 0 * (skillHeight + 10) },  // 180
+        { key: 'j', y: startY + 1 * (skillHeight + 10) },  // 290
+        { key: 'k', y: startY + 2 * (skillHeight + 10) },  // 400
+        { key: 'l', y: startY + 3 * (skillHeight + 10) }   // 510
     ];
     
-    const boxWidth = 300;
-    const boxHeight = 40;
-    const boxX = canvasWidth/2 - boxWidth/2;
-    
     for (const skill of skillBoxes) {
-        if (mouseX >= boxX && mouseX <= boxX + boxWidth &&
-            mouseY >= skill.y && mouseY <= skill.y + boxHeight) {
+        if (mouseX >= skillX && mouseX <= skillX + skillWidth &&
+            mouseY >= skill.y && mouseY <= skill.y + skillHeight) {
             
             const result = upgradeSkill(skill.key);
             console.log('업그레이드 결과:', result.message);

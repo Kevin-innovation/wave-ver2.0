@@ -3,6 +3,7 @@
  */
 
 import { getCoins, spendCoins, isSkillUnlocked, unlockSkill } from './economy.js';
+import { recordGachaPull } from './achievements.js';
 
 // ==================== 상점 설정 ====================
 export const SHOP_CONFIG = {
@@ -89,6 +90,9 @@ export function performSkillGacha() {
     
     // 스킬 해제
     unlockSkill(selectedSkill);
+    
+    // 도전과제 통계 기록
+    recordGachaPull();
     
     // 애니메이션 시작
     startGachaAnimation(selectedSkill);
