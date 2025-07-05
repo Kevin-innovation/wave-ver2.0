@@ -3,7 +3,7 @@
  */
 
 import { isSkillUnlocked, getCoins } from './economy.js';
-import { canPerformGacha } from './shop.js';
+import { canPerformGacha, canPerformGuideGacha, getUnlockedGuides, SHOP_CONFIG } from './shop.js';
 import { getSkillLevel, canUpgradeSkill, getUpgradeCost, UPGRADE_CONFIG } from './upgrade.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_TIERS, getPlayerStats, getUnlockedAchievements, getAchievementProgress } from './achievements.js';
 import { isLoggedIn, getCurrentUserInfo } from './auth.js';
@@ -148,22 +148,22 @@ export function renderShopScreen(ctx, canvasWidth, canvasHeight) {
     
     // 설명
     ctx.font = '20px Arial';
-    ctx.fillText('스킬을 뽑아서 획득하세요!', canvasWidth/2, 160);
+    ctx.fillText('스킬과 업적 가이드를 뽑으세요!', canvasWidth/2, 160);
     
-    // 뽑기 박스
+    // 스킬 뽑기 박스
     const boxWidth = 200;
     const boxHeight = 150;
     const boxX = canvasWidth/2 - boxWidth/2;
     const boxY = 200;
     
-    // 마우스 호버 효과를 위한 색상 (나중에 추가)
+    // 스킬 뽑기 박스 배경
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
     ctx.strokeStyle = '#FFA500';
     ctx.lineWidth = 3;
     ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
     
-    // 뽑기 박스 내용
+    // 스킬 뽑기 박스 내용
     ctx.fillStyle = '#8B4513';
     ctx.font = 'bold 18px Arial';
     ctx.fillText('스킬 뽑기', canvasWidth/2, boxY + 40);
@@ -172,6 +172,27 @@ export function renderShopScreen(ctx, canvasWidth, canvasHeight) {
     ctx.font = '14px Arial';
     ctx.fillText('클릭하여 뽑기!', canvasWidth/2, boxY + 100);
     ctx.fillText('J/K/L 스킬 랜덤', canvasWidth/2, boxY + 120);
+    
+    // 가이드 뽑기 박스
+    const guideBoxY = boxY + boxHeight + 20;
+    
+    // 가이드 뽑기 박스 배경
+    ctx.fillStyle = '#8A2BE2';
+    ctx.fillRect(boxX, guideBoxY, boxWidth, boxHeight);
+    ctx.strokeStyle = '#4B0082';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(boxX, guideBoxY, boxWidth, boxHeight);
+    
+    // 가이드 뽑기 박스 내용
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText('업적 해금방법 뽑기', canvasWidth/2, guideBoxY + 30);
+    ctx.font = '16px Arial';
+    ctx.fillText('💰 500 코인', canvasWidth/2, guideBoxY + 55);
+    ctx.font = '14px Arial';
+    ctx.fillText('비밀을 하나씩 공개!', canvasWidth/2, guideBoxY + 80);
+    ctx.font = '12px Arial';
+    ctx.fillText('25개 업적 중 하나 랜덤', canvasWidth/2, guideBoxY + 105);
     
     // 현재 잠긴 스킬 표시
     const lockedSkills = [];
@@ -182,21 +203,31 @@ export function renderShopScreen(ctx, canvasWidth, canvasHeight) {
     ctx.fillStyle = '#666666';
     ctx.font = '16px Arial';
     if (lockedSkills.length > 0) {
-        ctx.fillText(`잠긴 스킬: ${lockedSkills.join(', ')}`, canvasWidth/2, 380);
+        ctx.fillText(`잠긴 스킬: ${lockedSkills.join(', ')}`, canvasWidth/2, guideBoxY + 150);
     } else {
-        ctx.fillText('모든 스킬을 보유하고 있습니다!', canvasWidth/2, 380);
+        ctx.fillText('모든 스킬을 보유하고 있습니다!', canvasWidth/2, guideBoxY + 150);
     }
+    
+    // 해금된 가이드 수 표시
+    const unlockedGuides = getUnlockedGuides();
+    ctx.fillStyle = '#9C27B0';
+    ctx.font = '16px Arial';
+    ctx.fillText(`해금된 가이드: ${unlockedGuides.length}/25`, canvasWidth/2, guideBoxY + 175);
     
     // 뽑기 가능 여부 표시
     const gachaStatus = canPerformGacha();
     ctx.fillStyle = gachaStatus.canGacha ? '#4CAF50' : '#F44336';
     ctx.font = '14px Arial';
-    ctx.fillText(gachaStatus.reason, canvasWidth/2, 410);
+    ctx.fillText(`스킬 뽑기: ${gachaStatus.reason}`, canvasWidth/2, guideBoxY + 200);
+    
+    const guideGachaStatus = canPerformGuideGacha();
+    ctx.fillStyle = guideGachaStatus.canGacha ? '#4CAF50' : '#F44336';
+    ctx.fillText(`가이드 뽑기: ${guideGachaStatus.reason}`, canvasWidth/2, guideBoxY + 220);
     
     // 현재 코인 표시
     ctx.fillStyle = '#FF9800';
     ctx.font = '18px Arial';
-    ctx.fillText(`보유 코인: 🪙 ${getCoins()}`, canvasWidth/2, 440);
+    ctx.fillText(`보유 코인: 🪙 ${getCoins()}`, canvasWidth/2, guideBoxY + 250);
     
     // 하단 안내
     ctx.fillStyle = '#666666';
@@ -373,11 +404,77 @@ export function renderAchievementsScreen(ctx, canvasWidth, canvasHeight) {
         renderAchievementCard(ctx, achievement, x, y, achievementWidth, achievementHeight, isUnlocked);
     });
     
-    // 하단 안내
-    ctx.fillStyle = '#666666';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('1/2/3/4 키로 탭 전환', canvasWidth/2, canvasHeight - 10);
+    // 해금된 가이드 표시
+    const unlockedGuides = getUnlockedGuides();
+    
+    if (unlockedGuides.length > 0) {
+        ctx.fillStyle = '#8B4513';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🔮 해금된 비밀 (${unlockedGuides.length}/25)`, canvasWidth/2, canvasHeight - 160);
+        
+        // 해금된 가이드 목록 표시 (최대 3개)
+        const displayGuides = unlockedGuides.slice(-3); // 최근 3개만 표시
+        
+        displayGuides.forEach((guide, index) => {
+            ctx.fillStyle = '#9C27B0';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(guide.title, canvasWidth/2, canvasHeight - 135 + index * 25);
+            
+            // 가이드 텍스트를 줄바꿈하여 표시
+            ctx.fillStyle = '#654321';
+            ctx.font = '12px Arial';
+            const maxWidth = canvasWidth - 100;
+            const words = guide.guide.split(' ');
+            let line = '';
+            let yPos = canvasHeight - 120 + index * 25;
+            
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' ';
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && i > 0) {
+                    ctx.fillText(line, canvasWidth/2, yPos);
+                    line = words[i] + ' ';
+                    yPos += 12;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, canvasWidth/2, yPos);
+        });
+        
+        // 추가 가이드 안내
+        if (unlockedGuides.length < 25) {
+            ctx.fillStyle = '#654321';
+            ctx.font = '12px Arial';
+            ctx.fillText('🎰 상점에서 더 많은 비밀을 발견하세요!', canvasWidth/2, canvasHeight - 45);
+        }
+    } else {
+        // 업적 탐험 안내 (가이드가 없을 때)
+        ctx.fillStyle = '#8B4513';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔍 업적 탐험하기', canvasWidth/2, canvasHeight - 80);
+        
+        // 업적 해금 방법 획득 안내
+        ctx.fillStyle = '#654321';
+        ctx.font = '14px Arial';
+        const explorationTips = [
+            '🎰 상점에서 "업적 해금방법 뽑기"로 비밀을 알아보세요!',
+            '💡 각 업적마다 숨겨진 해금 조건이 있습니다',
+            '🏆 모든 업적을 달성하여 진정한 마스터가 되어보세요!'
+        ];
+        
+        explorationTips.forEach((tip, index) => {
+            ctx.fillText(tip, canvasWidth/2, canvasHeight - 55 + index * 18);
+        });
+    }
+    
+    // 하단 탭 전환 안내
+    ctx.fillStyle = '#999999';
+    ctx.font = '12px Arial';
+    ctx.fillText('1/2/3/4/5 키로 탭 전환', canvasWidth/2, canvasHeight - 5);
     
     // 텍스트 정렬 리셋
     ctx.textAlign = 'left';

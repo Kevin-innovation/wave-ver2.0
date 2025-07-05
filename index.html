@@ -12,30 +12,12 @@
         <canvas id="gameCanvas" width="800" height="800"></canvas>
         
         <div class="instructions">
-            <p><strong>조작법:</strong> 방향키 또는 WASD로 이동, HJKL로 스킬 사용, 게임오버 시 'R' 키로 재시작</p>
-            <p><strong>탭 전환:</strong> 1-게임, 2-상점, 3-성장, 4-도전과제, 5-랭킹 화면</p>
-            <p><strong>스킬:</strong> H-대시(기본), J-실드(🔒), K-슬로우(🔒), L-몬스터멈춤(🔒)</p>
-            <p><strong>목표:</strong> 빨간 몬스터를 피하며 코인 모으기! 🪙</p>
-            <p><strong>상점:</strong> 2키로 상점 이동, 뽑기 박스 클릭으로 스킬 획득 (300코인)!</p>
-            <p><strong>🔐 Google 로그인:</strong> 클라우드 저장 & 전체 랭킹 참여!</p>
-            <p><strong>🏆 랭킹:</strong> 5키로 랭킹 확인, 최고 기록으로 경쟁하세요!</p>
+            <p><strong>🎯 게임 목표:</strong> 몬스터를 피하며 최대한 오래 생존하세요!</p>
+            <p><strong>🏆 업적 수집:</strong> 다양한 플레이 스타일로 모든 업적을 달성해보세요!</p>
         </div>
     </div>
 
     <!-- 메인 게임 스크립트 (모듈 시스템 사용) -->
     <script type="module" src="js/game.js"></script>
-    
-    <!-- 에러 디버깅 -->
-    <script>
-        window.addEventListener('error', function(e) {
-            console.error('Global error:', e.error);
-            document.body.innerHTML += '<div style="color: red; background: white; padding: 10px; position: fixed; top: 0; left: 0; z-index: 9999; width: 100%;">Error: ' + e.error + '</div>';
-        });
-        
-        window.addEventListener('unhandledrejection', function(e) {
-            console.error('Unhandled promise rejection:', e.reason);
-            document.body.innerHTML += '<div style="color: red; background: white; padding: 10px; position: fixed; top: 20px; left: 0; z-index: 9999; width: 100%;">Promise Error: ' + e.reason + '</div>';
-        });
-    </script>
 </body>
 </html>

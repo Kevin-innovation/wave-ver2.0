@@ -21,8 +21,8 @@ import { updateSkillConfig } from './skills.js';
 import { initAuthUI } from './auth.js';
 import { initRankingSystem, submitScoreToRanking } from './ranking.js';
 import { initAchievementSystem, startGameSession, endGameSession, checkAchievements } from './achievements.js';
+import { initShopSystem } from './shop.js';
 import './ui.js';  // UI 모듈 로드
-import './shop.js';  // 상점 모듈 로드
 
 // ==================== 게임 변수 ====================
 export const gameState = {
@@ -65,6 +65,9 @@ export async function initGame() {
     
     // 도전과제 시스템 초기화
     await initAchievementSystem();
+    
+    // 상점 시스템 초기화
+    initShopSystem();
     
     // 키보드 이벤트 리스너 설정
     setupInputListeners(gameState, canvas);
