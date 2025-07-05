@@ -195,6 +195,39 @@ async function handleSyncData() {
  * 초기 인증 상태 확인
  */
 async function checkInitialAuthState() {
+    console.log('🔍 초기 인증 상태 확인 중...');
+    
+    // URL 해시 확인 (OAuth 콜백 처리)
+    const urlHash = window.location.hash;
+    if (urlHash && urlHash.includes('access_token')) {
+        console.log('🔑 OAuth 콜백 감지:', urlHash);
+        
+        // 페이지 새로고침 방지를 위해 해시 제거
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // 약간의 지연 후 사용자 상태 확인
+        setTimeout(async () => {
+            const user = await getCurrentUser();
+            if (user) {
+                console.log('✅ OAuth 콜백 처리 성공');
+                updateAuthUI(true, user);
+                
+                // 클라우드 데이터 로드 및 병합
+                try {
+                    const cloudData = await loadGameDataFromSupabase();
+                    if (cloudData) {
+                        await mergeGameData(cloudData);
+                    }
+                } catch (error) {
+                    console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
+                }
+            }
+        }, 1000);
+        
+        return;
+    }
+    
+    // 일반적인 사용자 상태 확인
     const user = await getCurrentUser();
     
     if (user) {

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Ver 2.0 - 리다이렉트 중...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .loading {
+            text-align: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <h1>🎮 Wave Ver 2.0</h1>
+        <p>게임으로 이동 중...</p>
+    </div>
+    
+    <script>
+        // GitHub Pages SPA 라우팅 처리
+        // 현재 URL의 경로와 해시를 보존하면서 index.html로 리다이렉트
+        const currentPath = window.location.pathname;
+        const currentHash = window.location.hash;
+        const currentSearch = window.location.search;
+        
+        console.log('404 페이지 - 리다이렉트 처리 중...');
+        console.log('현재 경로:', currentPath);
+        console.log('현재 해시:', currentHash);
+        console.log('현재 검색:', currentSearch);
+        
+        // 메인 페이지로 리다이렉트하면서 OAuth 콜백 정보 보존
+        let redirectUrl = '/wave-ver2.0/';
+        
+        // OAuth 콜백 정보가 있으면 보존
+        if (currentHash || currentSearch) {
+            redirectUrl += currentSearch + currentHash;
+        }
+        
+        console.log('리다이렉트 URL:', redirectUrl);
+        
+        // 즉시 리다이렉트
+        window.location.replace(redirectUrl);
+    </script>
+</body>
+</html> 
