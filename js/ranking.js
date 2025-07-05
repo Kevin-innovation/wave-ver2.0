@@ -15,6 +15,15 @@ let rankingContainer = null;
 let currentRankings = [];
 let personalBest = null;
 
+// 외부에서 접근 가능하도록 내보내기
+export function getCurrentRankings() {
+    return currentRankings;
+}
+
+export function getPersonalBest() {
+    return personalBest;
+}
+
 /**
  * 랭킹 시스템 초기화
  */

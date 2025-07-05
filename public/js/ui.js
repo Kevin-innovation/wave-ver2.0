@@ -7,6 +7,7 @@ import { canPerformGacha } from './shop.js';
 import { getSkillLevel, canUpgradeSkill, getUpgradeCost, UPGRADE_CONFIG } from './upgrade.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_TIERS, getPlayerStats, getUnlockedAchievements, getAchievementProgress } from './achievements.js';
 import { isLoggedIn, getCurrentUserInfo } from './auth.js';
+import { getCurrentRankings, getPersonalBest } from './ranking.js';
 
 // ==================== UI 상태 정의 ====================
 export const UI_STATES = {
@@ -535,32 +536,84 @@ export function renderRankingScreen(ctx, canvasWidth, canvasHeight) {
     } else {
         // 로그인된 상태 - 랭킹 정보 표시
         const userInfo = getCurrentUserInfo();
+        const userName = userInfo?.user_metadata?.full_name || userInfo?.email || 'Unknown';
         
         // 현재 사용자 정보
         ctx.fillStyle = '#4CAF50';
         ctx.font = '18px Arial';
-        ctx.fillText(`👤 ${userInfo.name}님, 환영합니다!`, canvasWidth/2, 150);
+        ctx.fillText(`👤 ${userName}님, 환영합니다!`, canvasWidth/2, 150);
         
-        // 랭킹 데이터 로딩 상태
-        ctx.fillStyle = '#666666';
-        ctx.font = '16px Arial';
-        ctx.fillText('🔄 랭킹 데이터를 불러오는 중...', canvasWidth/2, 200);
+        // 실시간 랭킹 데이터 가져오기
+        const rankings = getCurrentRankings();
+        const personalBest = getPersonalBest();
         
         // 개인 최고 기록 표시
         ctx.fillStyle = '#FF9800';
         ctx.font = '20px Arial';
-        ctx.fillText('📊 개인 최고 기록', canvasWidth/2, 250);
+        ctx.fillText('📊 개인 최고 기록', canvasWidth/2, 190);
         
-        // 실제 랭킹 데이터는 ranking.js에서 관리
-        ctx.fillStyle = '#333333';
-        ctx.font = '16px Arial';
-        ctx.fillText('최고 웨이브: 조회 중...', canvasWidth/2, 280);
-        ctx.fillText('전체 순위: 조회 중...', canvasWidth/2, 310);
+        if (personalBest) {
+            // 전체 랭킹에서의 순위 찾기
+            const globalRank = rankings.findIndex(r => r.id === personalBest.id) + 1;
+            const rankDisplay = globalRank > 0 ? `전체 ${globalRank}위` : '순위 집계 중';
+            
+            ctx.fillStyle = '#333333';
+            ctx.font = '16px Arial';
+            ctx.fillText(`최고 웨이브: ${personalBest.score}웨이브`, canvasWidth/2, 220);
+            ctx.fillText(`${rankDisplay}`, canvasWidth/2, 240);
+        } else {
+            ctx.fillStyle = '#666666';
+            ctx.font = '16px Arial';
+            ctx.fillText('아직 랭킹 기록이 없습니다', canvasWidth/2, 220);
+        }
         
-        // 새로고침 안내
-        ctx.fillStyle = '#666666';
-        ctx.font = '14px Arial';
-        ctx.fillText('📱 실시간 랭킹은 자동으로 업데이트됩니다', canvasWidth/2, 400);
+        // 전체 랭킹 표시
+        ctx.fillStyle = '#1976D2';
+        ctx.font = '18px Arial';
+        ctx.fillText('🏆 전체 랭킹 TOP 10', canvasWidth/2, 280);
+        
+        if (rankings.length > 0) {
+            ctx.fillStyle = '#333333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            
+            const startY = 310;
+            const lineHeight = 20;
+            const maxDisplay = Math.min(rankings.length, 10);
+            
+            for (let i = 0; i < maxDisplay; i++) {
+                const rank = rankings[i];
+                const isMe = userInfo && rank.user_id === userInfo.id;
+                const rankText = `${i + 1}위`;
+                const nameText = rank.user_name.length > 10 ? 
+                    rank.user_name.substring(0, 10) + '...' : rank.user_name;
+                const scoreText = `${rank.score}웨이브`;
+                
+                // 내 기록이면 강조
+                if (isMe) {
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.font = 'bold 14px Arial';
+                } else {
+                    ctx.fillStyle = '#333333';
+                    ctx.font = '14px Arial';
+                }
+                
+                const yPos = startY + (i * lineHeight);
+                ctx.fillText(rankText, 50, yPos);
+                ctx.fillText(nameText, 110, yPos);
+                ctx.fillText(scoreText, canvasWidth - 130, yPos);
+                
+                if (isMe) {
+                    ctx.fillText('👤', canvasWidth - 50, yPos);
+                }
+            }
+            
+            ctx.textAlign = 'center';
+        } else {
+            ctx.fillStyle = '#666666';
+            ctx.font = '16px Arial';
+            ctx.fillText('랭킹 데이터를 불러오는 중...', canvasWidth/2, 320);
+        }
     }
     
     // 하단 안내
