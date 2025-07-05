@@ -22,6 +22,48 @@ export const keys = {
 };
 
 /**
+ * 입력 필드가 현재 포커스되어 있는지 확인
+ * @returns {boolean} 입력 필드가 포커스되어 있으면 true
+ */
+function isInputFieldFocused() {
+    const activeElement = document.activeElement;
+    
+    // 입력 필드나 텍스트 영역이 포커스되어 있는지 확인
+    if (activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.contentEditable === 'true'
+    )) {
+        // 추가 로그로 디버깅
+        console.log('🔍 입력 필드 포커스됨:', activeElement.tagName, activeElement.type, activeElement.id);
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * 특정 키가 게임 키인지 확인
+ * @param {string} code - 키 코드
+ * @returns {boolean} 게임 키이면 true
+ */
+function isGameKey(code) {
+    const gameKeys = [
+        // 이동 키
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'KeyA', 'KeyD', 'KeyW', 'KeyS',
+        // 스킬 키
+        'KeyH', 'KeyJ', 'KeyK', 'KeyL',
+        // 기능 키
+        'KeyR',
+        // 탭 전환 키
+        'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'
+    ];
+    
+    return gameKeys.includes(code);
+}
+
+/**
  * 키보드 이벤트 리스너 설정
  * @param {Object} gameState - 게임 상태 객체
  * @param {HTMLCanvasElement} canvas - 캔버스 요소
@@ -29,6 +71,18 @@ export const keys = {
 export function setupInputListeners(gameState, canvas) {
     // 키보드 눌림 이벤트
     document.addEventListener('keydown', (event) => {
+        // 게임 키가 아니면 원래 동작 유지
+        if (!isGameKey(event.code)) {
+            return;
+        }
+        
+        // 입력 필드가 포커스되어 있고 게임 키를 입력하려고 할 때만 체크
+        if (isInputFieldFocused()) {
+            console.log('🎮 게임 키 차단됨:', event.code, '- 입력 필드 포커스 중');
+            return;
+        }
+        
+        console.log('🎮 게임 키 처리:', event.code);
         switch(event.code) {
             case 'ArrowLeft':
             case 'KeyA':
@@ -98,6 +152,15 @@ export function setupInputListeners(gameState, canvas) {
 
     // 키보드 떼기 이벤트
     document.addEventListener('keyup', (event) => {
+        // 게임 키가 아니면 원래 동작 유지
+        if (!isGameKey(event.code)) {
+            return;
+        }
+        
+        // 입력 필드가 포커스되어 있고 게임 키를 입력하려고 할 때만 체크
+        if (isInputFieldFocused()) {
+            return;
+        }
         switch(event.code) {
             case 'ArrowLeft':
             case 'KeyA':
