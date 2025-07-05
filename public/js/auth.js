@@ -9,7 +9,9 @@ import {
     onAuthStateChange,
     currentUser,
     saveGameDataToSupabase,
-    loadGameDataFromSupabase
+    loadGameDataFromSupabase,
+    supabase,
+    SUPABASE_URL
 } from './supabase.js';
 import { gameData, saveGameData, loadGameData } from './economy.js';
 
@@ -196,41 +198,98 @@ async function handleSyncData() {
  */
 async function checkInitialAuthState() {
     console.log('🔍 초기 인증 상태 확인 중...');
+    console.log('🌐 현재 URL:', window.location.href);
+    console.log('🔗 Origin:', window.location.origin);
+    console.log('📍 Pathname:', window.location.pathname);
+    console.log('🔐 Hash:', window.location.hash);
     
     // URL 해시 확인 (OAuth 콜백 처리)
     const urlHash = window.location.hash;
     if (urlHash && urlHash.includes('access_token')) {
         console.log('🔑 OAuth 콜백 감지:', urlHash);
         
+        try {
+            // URL 해시에서 토큰 정보 추출
+            const hashParams = new URLSearchParams(urlHash.slice(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            const expiresIn = hashParams.get('expires_in');
+            const tokenType = hashParams.get('token_type');
+            const errorCode = hashParams.get('error');
+            const errorDescription = hashParams.get('error_description');
+            
+            console.log('📝 토큰 정보:', { 
+                accessToken: accessToken ? accessToken.slice(0, 20) + '...' : 'None', 
+                refreshToken: refreshToken ? refreshToken.slice(0, 20) + '...' : 'None', 
+                expiresIn,
+                tokenType,
+                error: errorCode,
+                errorDescription
+            });
+            
+            // 에러 체크
+            if (errorCode) {
+                console.error('❌ OAuth 에러 발생:', errorCode, errorDescription);
+                alert(`로그인 오류: ${errorDescription || errorCode}`);
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+            
+            if (accessToken && refreshToken) {
+                console.log('🔄 Supabase 세션 설정 시도...');
+                
+                // Supabase 세션 수동 설정
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+                
+                if (error) {
+                    console.error('❌ 세션 설정 실패:', error);
+                    alert(`세션 설정 실패: ${error.message}`);
+                } else {
+                    console.log('✅ 세션 설정 성공:', data);
+                    
+                    // 페이지 새로고침 방지를 위해 해시 제거
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // UI 업데이트 및 데이터 병합
+                    if (data.user) {
+                        console.log('👤 사용자 정보:', data.user.email);
+                        updateAuthUI(true, data.user);
+                        
+                        // 클라우드 데이터 로드 및 병합
+                        try {
+                            const cloudData = await loadGameDataFromSupabase();
+                            if (cloudData) {
+                                await mergeGameData(cloudData);
+                            }
+                        } catch (error) {
+                            console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
+                        }
+                    }
+                    
+                    return;
+                }
+            } else {
+                console.warn('⚠️ 토큰 정보 불완전:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
+            }
+        } catch (error) {
+            console.error('❌ OAuth 콜백 처리 오류:', error);
+            alert(`콜백 처리 오류: ${error.message}`);
+        }
+        
         // 페이지 새로고침 방지를 위해 해시 제거
         window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // 약간의 지연 후 사용자 상태 확인
-        setTimeout(async () => {
-            const user = await getCurrentUser();
-            if (user) {
-                console.log('✅ OAuth 콜백 처리 성공');
-                updateAuthUI(true, user);
-                
-                // 클라우드 데이터 로드 및 병합
-                try {
-                    const cloudData = await loadGameDataFromSupabase();
-                    if (cloudData) {
-                        await mergeGameData(cloudData);
-                    }
-                } catch (error) {
-                    console.error('❌ OAuth 콜백 후 데이터 병합 실패:', error);
-                }
-            }
-        }, 1000);
-        
         return;
     }
     
     // 일반적인 사용자 상태 확인
+    console.log('🔄 기존 세션 확인 중...');
     const user = await getCurrentUser();
     
     if (user) {
+        console.log('✅ 기존 사용자 로그인 상태:', user.email);
         updateAuthUI(true, user);
         
         // 클라우드 데이터 확인 및 로드
@@ -243,6 +302,7 @@ async function checkInitialAuthState() {
             console.error('❌ 초기 클라우드 데이터 로드 실패:', error);
         }
     } else {
+        console.log('ℹ️ 로그인되지 않은 상태');
         updateAuthUI(false, null);
     }
 }
@@ -374,4 +434,77 @@ export function getCurrentUserInfo() {
 
 // 디버깅: 전역 변수로 노출
 window.currentUser = currentUser;
-window.isLoggedIn = isLoggedIn; 
+window.isLoggedIn = isLoggedIn;
+
+// 디버깅: 로그인 상태 체크 함수 추가
+window.checkAuthStatus = async function() {
+    console.log('🔍 === 로그인 상태 체크 ===');
+    console.log('🌐 현재 URL:', window.location.href);
+    console.log('🔗 Origin:', window.location.origin);
+    console.log('📍 Pathname:', window.location.pathname);
+    console.log('🔐 Hash:', window.location.hash);
+    
+    // Supabase 세션 확인
+    const { data: { session }, error } = await supabase.auth.getSession();
+    console.log('📊 Supabase 세션:', session ? '있음' : '없음');
+    if (session) {
+        console.log('👤 사용자 이메일:', session.user.email);
+        console.log('🔑 토큰 만료:', new Date(session.expires_at * 1000));
+    }
+    if (error) {
+        console.error('❌ 세션 확인 오류:', error);
+    }
+    
+    // 현재 사용자 변수 확인
+    console.log('👤 currentUser:', currentUser);
+    console.log('🔧 isLoggedIn():', isLoggedIn());
+    
+    // 로컬 스토리지 확인
+    const localKeys = ['supabase.auth.token', 'sb-' + SUPABASE_URL.split('//')[1].split('.')[0] + '-auth-token'];
+    localKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        console.log(`💾 LocalStorage[${key}]:`, value ? '있음' : '없음');
+    });
+    
+    console.log('🔍 === 체크 완료 ===');
+};
+
+// 디버깅: 강제 로그아웃 함수
+window.forceLogout = async function() {
+    console.log('🚪 강제 로그아웃 시도...');
+    
+    // Supabase 로그아웃
+    await supabase.auth.signOut();
+    
+    // 로컬 변수 초기화
+    currentUser = null;
+    
+    // UI 업데이트
+    updateAuthUI(false, null);
+    
+    console.log('✅ 강제 로그아웃 완료');
+};
+
+// 디버깅: 토큰 갱신 함수
+window.refreshAuthToken = async function() {
+    console.log('🔄 토큰 갱신 시도...');
+    
+    const { data, error } = await supabase.auth.refreshSession();
+    
+    if (error) {
+        console.error('❌ 토큰 갱신 실패:', error);
+    } else {
+        console.log('✅ 토큰 갱신 성공:', data);
+        if (data.user) {
+            currentUser = data.user;
+            updateAuthUI(true, data.user);
+        }
+    }
+};
+
+console.log('🛠️ 디버깅 도구 사용법:');
+console.log('- window.checkAuthStatus() : 로그인 상태 확인');
+console.log('- window.forceLogout() : 강제 로그아웃');
+console.log('- window.refreshAuthToken() : 토큰 갱신');
+console.log('- window.currentUser : 현재 사용자 정보');
+console.log('- window.isLoggedIn() : 로그인 상태 확인'); 

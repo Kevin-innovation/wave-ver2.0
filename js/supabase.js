@@ -5,8 +5,8 @@
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
 
 // Supabase 설정 (새로운 프로젝트 정보로 업데이트 필요!)
-const SUPABASE_URL = 'https://lcsqkovxzytarfosrxob.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxjc3Frb3Z4enl0YXJmb3NyeG9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Njk2ODEsImV4cCI6MjA2NzI0NTY4MX0.n0ouKA7dv04wwKsnlV_7WTyl4qV0M6LsIwQarCwkJzs';
+export const SUPABASE_URL = 'https://lcsqkovxzytarfosrxob.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxjc3Frb3Z4enl0YXJmb3NyeG9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Njk2ODEsImV4cCI6MjA2NzI0NTY4MX0.n0ouKA7dv04wwKsnlV_7WTyl4qV0M6LsIwQarCwkJzs';
 
 // Supabase 클라이언트 생성
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -26,6 +26,11 @@ export async function signInWithGoogle() {
         const redirectUrl = window.location.origin + '/';
         console.log('🚀 Google 로그인 시도...');
         console.log('🔗 리다이렉트 URL:', redirectUrl);
+        console.log('🌐 현재 도메인:', window.location.hostname);
+        
+        // 기존 세션 확인
+        const existingSession = await supabase.auth.getSession();
+        console.log('🔍 기존 세션 상태:', existingSession.data.session ? '있음' : '없음');
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -33,21 +38,38 @@ export async function signInWithGoogle() {
                 redirectTo: redirectUrl,
                 queryParams: {
                     access_type: 'offline',
-                    prompt: 'consent',
+                    prompt: 'select_account', // 계정 선택 강제
+                    include_granted_scopes: 'true'
                 }
             }
         });
 
         if (error) {
             console.error('❌ Google 로그인 실패:', error);
+            console.error('❌ 에러 코드:', error.status);
+            console.error('❌ 에러 메시지:', error.message);
+            
+            // 에러 타입별 처리
+            if (error.message.includes('redirect_uri_mismatch')) {
+                console.error('🔗 리다이렉트 URI 불일치 오류');
+                alert('리다이렉트 URL 설정 오류입니다. 관리자에게 문의하세요.');
+            } else if (error.message.includes('unauthorized_client')) {
+                console.error('🔐 클라이언트 인증 오류');
+                alert('OAuth 클라이언트 설정 오류입니다. 관리자에게 문의하세요.');
+            } else {
+                alert('로그인에 실패했습니다: ' + error.message);
+            }
+            
             return { success: false, error: error.message };
         }
 
         console.log('✅ Google 로그인 요청 성공');
+        console.log('📊 응답 데이터:', data);
         return { success: true, data };
         
     } catch (error) {
         console.error('❌ Google 로그인 오류:', error);
+        console.error('❌ 스택 트레이스:', error.stack);
         return { success: false, error: error.message };
     }
 }
