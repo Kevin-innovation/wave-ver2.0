@@ -415,27 +415,37 @@ function renderAchievementCard(ctx, achievement, x, y, width, height, isUnlocked
     
     // 달성된 업적에만 빛나는 효과
     if (isUnlocked) {
-        ctx.shadowColor = colors.glow;
-        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#00FF00'; // 녹색 글로우
+        ctx.shadowBlur = 15;
     }
     
     // 배경 (액자)
     ctx.fillStyle = colors.bg;
     ctx.fillRect(x, y, width, height);
     
-    // 테두리 (액자 프레임)
-    ctx.strokeStyle = colors.border;
-    ctx.lineWidth = isUnlocked ? 4 : 2;
+    // 테두리 (액자 프레임) - 달성된 업적은 녹색 테두리
+    if (isUnlocked) {
+        ctx.strokeStyle = '#00FF00'; // 밝은 녹색
+        ctx.lineWidth = 6; // 더 두꺼운 테두리
+    } else {
+        ctx.strokeStyle = colors.border;
+        ctx.lineWidth = 2;
+    }
     ctx.strokeRect(x, y, width, height);
     
     // 그림자 리셋
     ctx.shadowBlur = 0;
     
-    // 내부 장식 (달성된 업적만)
-    if (isUnlocked && achievement.tier !== ACHIEVEMENT_TIERS.BRONZE) {
-        ctx.strokeStyle = colors.glow;
+    // 내부 장식 (달성된 업적만) - 녹색 강조
+    if (isUnlocked) {
+        ctx.strokeStyle = '#32CD32'; // 라임 그린
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 6, y + 6, width - 12, height - 12);
+        
+        // 추가 내부 테두리 (더 눈에 띄게)
+        ctx.strokeStyle = '#90EE90'; // 연한 녹색
         ctx.lineWidth = 1;
-        ctx.strokeRect(x + 8, y + 8, width - 16, height - 16);
+        ctx.strokeRect(x + 10, y + 10, width - 20, height - 20);
     }
     
     // 아이콘 (크기 조정)
