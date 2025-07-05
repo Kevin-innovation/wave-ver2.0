@@ -63,8 +63,11 @@
         // 메인 페이지로 리다이렉트하면서 OAuth 콜백 정보 보존
         let redirectUrl = '/wave-ver2.0/';
         
-        // OAuth 콜백 정보가 있으면 보존
-        if (currentHash || currentSearch) {
+        // 루트 도메인으로 온 OAuth 콜백 처리
+        if (window.location.pathname === '/' && (currentHash || currentSearch)) {
+            console.log('루트 도메인 OAuth 콜백 감지, /wave-ver2.0/로 리다이렉트');
+            redirectUrl = '/wave-ver2.0/' + currentSearch + currentHash;
+        } else if (currentHash || currentSearch) {
             redirectUrl += currentSearch + currentHash;
         }
         
