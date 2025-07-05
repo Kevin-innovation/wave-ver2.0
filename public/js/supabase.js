@@ -328,19 +328,20 @@ export async function getPersonalBestRanking() {
             .select('*')
             .eq('user_id', currentUser.id)
             .order('score', { ascending: false })
-            .limit(1)
-            .single();
+            .order('achieved_at', { ascending: true }) // 같은 점수면 먼저 달성한 기록
+            .limit(1);
             
         if (error) {
-            if (error.code === 'PGRST116') {
-                console.log('ℹ️ 개인 랭킹 기록이 없습니다.');
-                return null;
-            }
             console.error('❌ 개인 최고 기록 조회 실패:', error);
             return null;
         }
         
-        return data;
+        if (!data || data.length === 0) {
+            console.log('ℹ️ 개인 랭킹 기록이 없습니다.');
+            return null;
+        }
+        
+        return data[0]; // 첫 번째(최고) 기록 반환
         
     } catch (error) {
         console.error('❌ 개인 최고 기록 조회 오류:', error);
